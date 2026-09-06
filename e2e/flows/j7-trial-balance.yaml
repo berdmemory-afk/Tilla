@@ -1,0 +1,10 @@
+# J7 / E9 trial balance
+appId: tilla-web
+name: J7 trial balance
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /reports/trial-balance }
+- assertVisible: { id: tb-heading }
+- assertVisible: { id: tb-balanced }
+- assertVisible: { id: tb-table }
+- assertDb: { trialBalanceBalanced: true }

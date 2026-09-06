@@ -8,12 +8,12 @@ export default async function DayBookPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Day Book</h1>
+      <h1 className="text-2xl font-semibold" data-testid="daybook-heading">Day Book</h1>
       <p className="mt-1 text-sm text-slate-500">
         Chronological register of posted vouchers with ledger lines
       </p>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 space-y-4" data-testid="daybook-list">
         {entries.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
             No vouchers yet. Post a sales voucher to populate the Day Book.
@@ -22,6 +22,7 @@ export default async function DayBookPage() {
           entries.map((e) => (
             <div
               key={e.id}
+              data-testid="daybook-entry"
               className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">

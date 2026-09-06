@@ -1,0 +1,5 @@
+SHA: 52b9ed53fdbb09f56243346dff1d034aa129e257
+Result: 24 passed / 0 failed
+vitest: 18/18
+SHIP_GATE: PASS-ready
+E6 residual: live Tally apply S2 stub-only

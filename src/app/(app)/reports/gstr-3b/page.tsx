@@ -21,9 +21,9 @@ export default async function Gstr3bPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">GSTR-3B summary</h1>
+          <h1 className="text-2xl font-semibold" data-testid="gstr3b-heading">GSTR-3B summary</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Outward liability − ITC from purchases (stub — not filed to GSTN)
+            Outward liability − ITC from purchases (stub — <span data-testid="gstr3b-stub-note">not filed to GSTN</span>)
           </p>
         </div>
         <div className="flex gap-2">
@@ -69,7 +69,7 @@ export default async function Gstr3bPage({
         </button>
       </form>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-3" data-testid="gstr3b-summary">
         <Section
           title="3.1 Outward supplies"
           rows={[

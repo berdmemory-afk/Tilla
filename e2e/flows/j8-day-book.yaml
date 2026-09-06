@@ -1,0 +1,8 @@
+# J8 / E9 day book
+appId: tilla-web
+name: J8 day book
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /reports/day-book }
+- assertVisible: { id: daybook-heading }
+- assertVisible: { id: daybook-list }

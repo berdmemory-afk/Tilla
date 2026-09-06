@@ -1,0 +1,14 @@
+# J6 / E9 journal + contra
+appId: tilla-web
+name: J6 journal contra
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /vouchers/journal/new }
+- assertVisible: { id: journal-form }
+- tapOn: { id: journal-submit }
+- assertPath: /reports/day-book
+- launchApp: { url: /vouchers/contra/new }
+- assertVisible: { id: contra-form }
+- tapOn: { id: contra-submit }
+- assertPath: /reports/day-book
+- assertDb: { voucherBalanced: true, type: Contra }

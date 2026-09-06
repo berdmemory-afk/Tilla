@@ -1,0 +1,13 @@
+Tilla E2E Ship Gate evidence
+SHA: 52b9ed53fdbb09f56243346dff1d034aa129e257
+Time: 2026-09-06 ~13:00 IST (log UTC stamp 072800Z)
+Env: SQLite prisma/dev.db; next dev :3000 reuseExistingServer; Chromium; workers=1
+Unit: vitest 18/18 PASS
+E2E: playwright 24/24 PASS
+Specs: e3 e5 e6 e7 e8 j-security j01 j02 j03 j04 j05(2) j06(2) j07 j08 j09(2) j11 j12
+Journeys: J1-J9,J11,J12 green; J10 via E7 CA RO
+UX SoT: E3 keyboard, E5 GST strip, E7 CA RO, E8 affiliate pending — green
+E6: smoke green (preview+confirm stub+audit); live Tally ledger apply NOT enabled — product gap S2
+Contabo: blocked until user PG
+SHIP_GATE: PASS-ready (J1–J12 critical + UX SoT green with archive; E6 live-apply residual S2)
+Log: docs/qa/evidence/e2e-run-20260906T072800Z.log

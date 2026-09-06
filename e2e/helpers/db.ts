@@ -45,3 +45,47 @@ export async function itemStockQty(prisma: PrismaClient, companyId: string, item
   const qtyOut = entries.reduce((s, e) => s + Number(e.qtyOut), 0);
   return { itemId: item.id, balance: Math.round((qtyIn - qtyOut) * 100) / 100, qtyIn, qtyOut };
 }
+
+export async function getTrialBalanceTotals(prisma: PrismaClient, companyId: string) {
+  const ledgers = await prisma.ledger.findMany({
+    where: { companyId },
+    include: { lines: true },
+  });
+  const round = (n: number) => Math.round(n * 100) / 100;
+  let totalDebit = 0;
+  let totalCredit = 0;
+  for (const ledger of ledgers) {
+    const netDr = Number(ledger.openingDr) + ledger.lines.reduce((s, l) => s + Number(l.debit), 0);
+    const netCr = Number(ledger.openingCr) + ledger.lines.reduce((s, l) => s + Number(l.credit), 0);
+    if (netDr > netCr) totalDebit += round(netDr - netCr);
+    else if (netCr > netDr) totalCredit += round(netCr - netDr);
+  }
+  totalDebit = round(totalDebit);
+  totalCredit = round(totalCredit);
+  return { totalDebit, totalCredit, balanced: totalDebit === totalCredit };
+}
+
+export async function sumSalesTaxBooks(
+  prisma: PrismaClient,
+  companyId: string,
+  from: Date,
+  to: Date
+) {
+  const vouchers = await prisma.voucher.findMany({
+    where: {
+      companyId,
+      status: "posted",
+      voucherType: { name: "Sales" },
+      date: { gte: from, lte: to },
+    },
+  });
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    taxable: round(vouchers.reduce((s, v) => s + Number(v.taxableAmount), 0)),
+    cgst: round(vouchers.reduce((s, v) => s + Number(v.cgstAmount), 0)),
+    sgst: round(vouchers.reduce((s, v) => s + Number(v.sgstAmount), 0)),
+    igst: round(vouchers.reduce((s, v) => s + Number(v.igstAmount), 0)),
+    total: round(vouchers.reduce((s, v) => s + Number(v.totalAmount), 0)),
+    count: vouchers.length,
+  };
+}

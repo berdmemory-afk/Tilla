@@ -22,9 +22,9 @@ export default async function Gstr1Page({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">GSTR-1 summary</h1>
+          <h1 className="text-2xl font-semibold" data-testid="gstr1-heading">GSTR-1 summary</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Outward supplies stub export — not filed to GSTN
+            <span data-testid="gstr1-stub-note">Outward supplies stub export — not filed to GSTN</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -70,7 +70,7 @@ export default async function Gstr1Page({
         </button>
       </form>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-5">
+      <div className="mt-6 grid gap-4 sm:grid-cols-5" data-testid="gstr1-summary">
         {[
           ["Invoices", report.summary.invoiceCount],
           ["Taxable", `₹${report.summary.taxableAmount.toFixed(2)}`],
@@ -81,6 +81,7 @@ export default async function Gstr1Page({
           <div
             key={String(label)}
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            data-testid={`gstr1-${String(label).toLowerCase()}`}
           >
             <div className="text-xs text-slate-500">{label}</div>
             <div className="mt-1 text-lg font-semibold text-tilla-800">{value}</div>
@@ -90,7 +91,7 @@ export default async function Gstr1Page({
 
       <h2 className="mt-8 font-medium">B2B ({report.b2b.length})</h2>
       <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-left text-sm">
+        <table data-testid="gstr1-table" className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-3 py-2">Invoice</th>

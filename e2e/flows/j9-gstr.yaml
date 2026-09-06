@@ -1,0 +1,12 @@
+# J9 / E5 GSTR stubs
+appId: tilla-web
+name: J9 GSTR drafts
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /reports/gstr-1 }
+- assertVisible: { id: gstr1-heading }
+- assertVisible: { id: gstr1-summary }
+- launchApp: { url: /reports/gstr-3b }
+- assertVisible: { id: gstr3b-heading }
+- assertVisible: { id: gstr3b-summary }
+- assertApi: { gstr1MatchesBooks: true }

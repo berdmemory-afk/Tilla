@@ -2,6 +2,36 @@
 
 Append-only. Newest first.
 
+## 2026-09-06 13:00 IST — Gap slice J5–J9/J12/E6
+- Owner: Grok Bot (gap closer on existing /workspace/Tilla)
+- SHIP_GATE: **PASS-ready** (J1–J12 critical + UX SoT green with archive)
+- Unit: 18/18 PASS (vitest)
+- E2E: 24/24 PASS (prior 14 + j05×2 j06×2 j07 j08 j09×2 j12 e6)
+- SHA: 52b9ed5
+- Archive: docs/qa/evidence/archive/run-20260906T072800Z.txt
+- Log: docs/qa/evidence/e2e-run-20260906T072800Z.log
+- Specs added: j05-payment-receipt, j06-journal-contra, j07-trial-balance, j08-day-book, j09-gstr-reports, j12-fy-lock, e6-tally-import
+- Flows: j5–j9, j12, e6 yaml
+- UI hooks: payment/receipt/journal/contra testids; TB/daybook/GSTR testids; FY lock panel
+- Remaining: E6 live Tally XML/CSV apply to books not enabled (stub+audit only) — severity **S2** per SEVERITY_RUBRIC; smoke covers preview/confirm
+- Contabo: blocked until user PG
+
+## 2026-09-06 12:49 IST — QA Engineer independent E2E re-run (commit ba0e445)
+
+- Owner: QA Engineer (executor)
+- SHA: `ba0e445374ebe435f7c0459eaaa8903549b66213` (message pins product+docs to `9cff90e`)
+- Env: SQLite `prisma/dev.db`; prisma seed refreshed; Chromium; `reuseExistingServer` on :3000 (`next dev` — not `next start`)
+- Pack run: eng-authored only — `j01-login`, `j02-intra-sales`, `j03-inter-sales`, `j04-purchase-stock`, `j11-tenancy`, `j-security-smoke`, `e3-keyboard`, `e5-gst-strip`, `e7-ca-view`, `e8-affiliate` (10 specs / 14 tests)
+- Result: **14 passed / 0 failed / 0 skipped** (30.4s)
+- Failures: none (no S0–S4 proposals)
+- Match vs QA Lead claimed 14/14 (gap-slice pack on `9cff90e`): **YES** (independent re-run on `ba0e445`)
+- Coverage still open vs J1–J12 / E1–E9:
+  - Missing journeys: **J5–J6** payment/receipt/journal/contra, **J7–J8** TB/day book, **J9** GSTR, **J12** FY lock
+  - Missing UX SoT: **E6**
+- Artifacts: `docs/qa/evidence/e2e-qa-engineer-20260906T071908Z.log`; archive `docs/qa/evidence/archive/qa-engineer-2026-09-06T1249IST/`
+- Contabo: not used
+- **QA Engineer did NOT declare SHIP_GATE or PASS** (gaps remain; Lead owns gate)
+
 ## 2026-09-06 12:47 IST — Gap slice J4/E3/E5/E7/E8
 - Owner: Grok Bot (gap closer on existing checkout)
 - SHIP_GATE: FAIL (remaining J5–J9, J12, E6)

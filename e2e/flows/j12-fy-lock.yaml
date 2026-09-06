@@ -1,0 +1,15 @@
+# J12 / E9 FY lock
+appId: tilla-web
+name: J12 FY lock
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /settings/company }
+- assertVisible: { id: fy-lock-panel }
+- tapOn: { id: fy-lock-toggle }
+- assertVisible: Locked
+- launchApp: { url: /vouchers/payment/new }
+- tapOn: { id: payment-submit }
+- assertVisible: { id: payment-error }
+- launchApp: { url: /settings/company }
+- tapOn: { id: fy-lock-toggle }
+- assertVisible: Open

@@ -50,12 +50,14 @@ export function NewReceiptForm({
   return (
     <form
       onSubmit={onSubmit}
+      data-testid="receipt-form"
       className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="block text-sm font-medium">Party</label>
           <select
+            data-testid="receipt-party"
             value={partyId}
             onChange={(e) => setPartyId(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -71,6 +73,7 @@ export function NewReceiptForm({
         <div>
           <label className="block text-sm font-medium">Receive into</label>
           <select
+            data-testid="receipt-cash"
             value={cashLedgerId}
             onChange={(e) => setCashLedgerId(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -96,6 +99,7 @@ export function NewReceiptForm({
         <div>
           <label className="block text-sm font-medium">Amount (₹)</label>
           <input
+            data-testid="receipt-amount"
             type="number"
             min={0.01}
             step="0.01"
@@ -109,6 +113,7 @@ export function NewReceiptForm({
       <div>
         <label className="block text-sm font-medium">Narration</label>
         <input
+          data-testid="receipt-narration"
           type="text"
           value={narration}
           onChange={(e) => setNarration(e.target.value)}
@@ -116,9 +121,10 @@ export function NewReceiptForm({
         />
       </div>
       <p className="text-xs text-slate-500">Posts Dr Cash/Bank · Cr Party</p>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-600" data-testid="receipt-error">{error}</p> : null}
       <button
         type="submit"
+        data-testid="receipt-submit"
         disabled={loading}
         className="rounded-md bg-tilla-600 px-4 py-2 text-sm font-medium text-white hover:bg-tilla-700 disabled:opacity-60"
       >

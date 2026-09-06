@@ -102,12 +102,13 @@ export function NewContraForm({ cashLedgers }: { cashLedgers: LedgerOpt[] }) {
       <div>
         <label className="block text-sm font-medium">Narration</label>
         <input
+          data-testid="contra-narration"
           value={narration}
           onChange={(e) => setNarration(e.target.value)}
           className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
         />
       </div>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-600" data-testid="contra-error">{error}</p> : null}
       <button
         type="submit"
         data-testid="contra-submit"

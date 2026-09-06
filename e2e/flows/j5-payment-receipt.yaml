@@ -1,0 +1,15 @@
+# J5 / E9 payment + receipt balanced
+appId: tilla-web
+name: J5 payment receipt
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /vouchers/payment/new }
+- assertVisible: { id: payment-form }
+- tapOn: { id: payment-submit }
+- assertPath: /reports/day-book
+- assertDb: { voucherBalanced: true, type: Payment }
+- launchApp: { url: /vouchers/receipt/new }
+- assertVisible: { id: receipt-form }
+- tapOn: { id: receipt-submit }
+- assertPath: /reports/day-book
+- assertDb: { voucherBalanced: true, type: Receipt }

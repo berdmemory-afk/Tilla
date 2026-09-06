@@ -1,0 +1,12 @@
+# E6 Tally import smoke stub
+appId: tilla-web
+name: E6 Tally import stub
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /settings/import }
+- assertVisible: { id: tally-import-heading }
+- tapOn: { id: tally-preview-btn }
+- assertVisible: { id: tally-preview-table }
+- tapOn: { id: tally-confirm-btn }
+- assertVisible: { id: tally-message }
+- note: PRODUCT GAP S2 live Tally apply not enabled
