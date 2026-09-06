@@ -1,6 +1,8 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { PRICING_PLANS } from "../src/lib/pricing/plans";
+import { postSalesVoucher } from "../src/lib/accounting/post-sales-voucher";
+import { postPurchaseVoucher } from "../src/lib/accounting/post-purchase-voucher";
 
 const prisma = new PrismaClient();
 
@@ -8,15 +10,192 @@ function d(n: number) {
   return new Prisma.Decimal(n);
 }
 
-async function main() {
-  console.log("Seeding Tilla demo data...");
+async function seedCompanyBooks(opts: {
+  name: string;
+  legalName: string;
+  gstin: string;
+  stateCode: string;
+  stateName: string;
+  city: string;
+  pincode: string;
+  fyLabel?: string;
+}) {
+  const company = await prisma.company.create({
+    data: {
+      name: opts.name,
+      legalName: opts.legalName,
+      gstin: opts.gstin,
+      stateCode: opts.stateCode,
+      stateName: opts.stateName,
+      addressLine1: "12 Demo Street",
+      city: opts.city,
+      pincode: opts.pincode,
+      fyLabel: opts.fyLabel ?? "2025-26",
+      financialYearStartMonth: 4,
+      booksLocked: false,
+    },
+  });
 
-  // Clean slate for idempotent local demo
+  const groups = [
+    { name: "Capital Account", nature: "equity" },
+    { name: "Current Assets", nature: "asset" },
+    { name: "Sundry Debtors", nature: "asset" },
+    { name: "Sundry Creditors", nature: "liability" },
+    { name: "Current Liabilities", nature: "liability" },
+    { name: "Duties & Taxes", nature: "liability" },
+    { name: "Sales Accounts", nature: "income" },
+    { name: "Purchase Accounts", nature: "expense" },
+    { name: "Indirect Expenses", nature: "expense" },
+  ];
+  const groupMap: Record<string, string> = {};
+  for (const g of groups) {
+    const created = await prisma.ledgerGroup.create({
+      data: { companyId: company.id, name: g.name, nature: g.nature },
+    });
+    groupMap[g.name] = created.id;
+  }
+
+  async function ledger(
+    name: string,
+    groupName: string,
+    o: { gstRole?: string; openingDr?: number; openingCr?: number } = {}
+  ) {
+    return prisma.ledger.create({
+      data: {
+        companyId: company.id,
+        groupId: groupMap[groupName],
+        name,
+        gstRole: o.gstRole,
+        isSystem: true,
+        openingDr: d(o.openingDr ?? 0),
+        openingCr: d(o.openingCr ?? 0),
+      },
+    });
+  }
+
+  await ledger("Capital", "Capital Account", { openingCr: 100000 });
+  const cash = await ledger("Cash", "Current Assets", { openingDr: 70000 });
+  const bank = await ledger("Bank", "Current Assets", { openingDr: 30000 });
+  await ledger("Sales", "Sales Accounts", { gstRole: "sales" });
+  await ledger("Output CGST", "Duties & Taxes", { gstRole: "output_cgst" });
+  await ledger("Output SGST", "Duties & Taxes", { gstRole: "output_sgst" });
+  await ledger("Output IGST", "Duties & Taxes", { gstRole: "output_igst" });
+  await ledger("Input CGST", "Duties & Taxes", { gstRole: "input_cgst" });
+  await ledger("Input SGST", "Duties & Taxes", { gstRole: "input_sgst" });
+  await ledger("Input IGST", "Duties & Taxes", { gstRole: "input_igst" });
+  await ledger("Purchase", "Purchase Accounts", { gstRole: "purchase" });
+
+  const debtorLedger = await ledger("Retail Customer", "Sundry Debtors");
+  const creditorLedger = await ledger("Local Supplier", "Sundry Creditors");
+  const igstDebtor = await ledger("Delhi Buyer", "Sundry Debtors");
+
+  const customer = await prisma.party.create({
+    data: {
+      companyId: company.id,
+      name: "Retail Customer",
+      gstin: `${opts.stateCode}AADCR1234A1Z5`.slice(0, 15),
+      stateCode: opts.stateCode,
+      stateName: opts.stateName,
+      partyType: "customer",
+      ledgerId: debtorLedger.id,
+    },
+  });
+  const supplier = await prisma.party.create({
+    data: {
+      companyId: company.id,
+      name: "Local Supplier",
+      gstin: `${opts.stateCode}AADCS5678B1Z9`.slice(0, 15),
+      stateCode: opts.stateCode,
+      stateName: opts.stateName,
+      partyType: "supplier",
+      ledgerId: creditorLedger.id,
+    },
+  });
+  await prisma.party.create({
+    data: {
+      companyId: company.id,
+      name: "Delhi Buyer",
+      gstin: "07AABCD9999C1Z0",
+      stateCode: "07",
+      stateName: "Delhi",
+      partyType: "customer",
+      ledgerId: igstDebtor.id,
+    },
+  });
+
+  await prisma.voucherType.createMany({
+    data: [
+      { companyId: company.id, name: "Sales", abbreviation: "Sls" },
+      { companyId: company.id, name: "Purchase", abbreviation: "Pur" },
+      { companyId: company.id, name: "Payment", abbreviation: "Pmt" },
+      { companyId: company.id, name: "Receipt", abbreviation: "Rcpt" },
+      { companyId: company.id, name: "Journal", abbreviation: "Jrnl" },
+      { companyId: company.id, name: "Contra", abbreviation: "Cntr" },
+    ],
+  });
+
+  const godown = await prisma.godown.create({
+    data: { companyId: company.id, name: "Main Godown", isPrimary: true },
+  });
+
+  const itemA = await prisma.item.create({
+    data: {
+      companyId: company.id,
+      name: "Widget A",
+      sku: "WGT-A",
+      hsnSac: "847130",
+      unit: "NOS",
+      gstRatePct: d(18),
+      salesPrice: d(1000),
+      purchasePrice: d(700),
+    },
+  });
+  const itemB = await prisma.item.create({
+    data: {
+      companyId: company.id,
+      name: "Widget B",
+      sku: "WGT-B",
+      hsnSac: "847130",
+      unit: "NOS",
+      gstRatePct: d(18),
+      salesPrice: d(500),
+      purchasePrice: d(350),
+    },
+  });
+
+  await prisma.stockEntry.createMany({
+    data: [
+      {
+        companyId: company.id,
+        itemId: itemA.id,
+        godownId: godown.id,
+        qtyIn: d(100),
+        qtyOut: d(0),
+        note: "Opening stock",
+      },
+      {
+        companyId: company.id,
+        itemId: itemB.id,
+        godownId: godown.id,
+        qtyIn: d(50),
+        qtyOut: d(0),
+        note: "Opening stock",
+      },
+    ],
+  });
+
+  return { company, customer, supplier, itemA, itemB, cash, bank };
+}
+
+async function main() {
+  console.log("Seeding Tilla demo data (CA-coherent)...");
+
   await prisma.affiliateEarning.deleteMany();
   await prisma.affiliateReferral.deleteMany();
   await prisma.companySubscription.deleteMany();
   await prisma.pricingPlan.deleteMany();
   await prisma.companyInvite.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.eInvoiceRecord.deleteMany();
   await prisma.eWayBillRecord.deleteMany();
   await prisma.voucherItem.deleteMany();
@@ -37,7 +216,7 @@ async function main() {
 
   const passwordHash = await hash("demo1234", 10);
 
-  const user = await prisma.user.create({
+  const owner = await prisma.user.create({
     data: {
       name: "Demo Owner",
       email: "demo@tilla.app",
@@ -45,183 +224,75 @@ async function main() {
       referralCode: "TILLA-DEMO",
     },
   });
-
-  const company = await prisma.company.create({
+  const ca = await prisma.user.create({
     data: {
-      name: "Acme Traders",
-      legalName: "Acme Traders Private Limited",
-      gstin: "27AABCT1332L1ZV",
-      stateCode: "27",
-      stateName: "Maharashtra",
-      addressLine1: "12 MG Road",
-      city: "Pune",
-      pincode: "411001",
+      name: "CA Viewer",
+      email: "ca@tilla.app",
+      passwordHash,
+      referralCode: "TILLA-CA",
+    },
+  });
+  const other = await prisma.user.create({
+    data: {
+      name: "Other Owner",
+      email: "other@tilla.app",
+      passwordHash,
+      referralCode: "TILLA-OTHER",
     },
   });
 
-  await prisma.membership.create({
-    data: {
-      userId: user.id,
-      companyId: company.id,
-      role: "owner",
-    },
+  const acme = await seedCompanyBooks({
+    name: "Acme Traders",
+    legalName: "Acme Traders Private Limited",
+    gstin: "27AABCT1332L1ZV",
+    stateCode: "27",
+    stateName: "Maharashtra",
+    city: "Pune",
+    pincode: "411001",
   });
 
-  // Indian-style CoA groups (simplified)
-  const groups = [
-    { name: "Capital Account", nature: "equity" },
-    { name: "Current Assets", nature: "asset" },
-    { name: "Sundry Debtors", nature: "asset" },
-    { name: "Sundry Creditors", nature: "liability" },
-    { name: "Current Liabilities", nature: "liability" },
-    { name: "Duties & Taxes", nature: "liability" },
-    { name: "Sales Accounts", nature: "income" },
-    { name: "Purchase Accounts", nature: "expense" },
-    { name: "Indirect Expenses", nature: "expense" },
-  ];
-
-  const groupMap: Record<string, string> = {};
-  for (const g of groups) {
-    const created = await prisma.ledgerGroup.create({
-      data: { companyId: company.id, name: g.name, nature: g.nature },
-    });
-    groupMap[g.name] = created.id;
-  }
-
-  async function ledger(
-    name: string,
-    groupName: string,
-    opts: { gstRole?: string; isSystem?: boolean; openingDr?: number; openingCr?: number } = {}
-  ) {
-    return prisma.ledger.create({
-      data: {
-        companyId: company.id,
-        groupId: groupMap[groupName],
-        name,
-        gstRole: opts.gstRole,
-        isSystem: opts.isSystem ?? true,
-        openingDr: d(opts.openingDr ?? 0),
-        openingCr: d(opts.openingCr ?? 0),
-      },
-    });
-  }
-
-  await ledger("Capital", "Capital Account", { openingCr: 100000 });
-  const cash = await ledger("Cash", "Current Assets", { openingDr: 70000 });
-  const bank = await ledger("Bank", "Current Assets", { openingDr: 30000 });
-  await ledger("Sales", "Sales Accounts", { gstRole: "sales" });
-  await ledger("Output CGST", "Duties & Taxes", { gstRole: "output_cgst" });
-  await ledger("Output SGST", "Duties & Taxes", { gstRole: "output_sgst" });
-  await ledger("Output IGST", "Duties & Taxes", { gstRole: "output_igst" });
-  await ledger("Input CGST", "Duties & Taxes", { gstRole: "input_cgst" });
-  await ledger("Input SGST", "Duties & Taxes", { gstRole: "input_sgst" });
-  await ledger("Input IGST", "Duties & Taxes", { gstRole: "input_igst" });
-  await ledger("Purchase", "Purchase Accounts", { gstRole: "purchase" });
-
-  const debtorLedger = await ledger("Retail Customer", "Sundry Debtors");
-  const creditorLedger = await ledger("Local Supplier", "Sundry Creditors");
-
-  const party = await prisma.party.create({
-    data: {
-      companyId: company.id,
-      name: "Retail Customer",
-      gstin: "27AADCR1234A1Z5",
-      stateCode: "27",
-      stateName: "Maharashtra",
-      partyType: "customer",
-      ledgerId: debtorLedger.id,
-    },
+  const beta = await seedCompanyBooks({
+    name: "Beta Retail",
+    legalName: "Beta Retail LLP",
+    gstin: "27AABCB9999B1Z1",
+    stateCode: "27",
+    stateName: "Maharashtra",
+    city: "Mumbai",
+    pincode: "400001",
   });
 
-  const supplier = await prisma.party.create({
-    data: {
-      companyId: company.id,
-      name: "Local Supplier",
-      gstin: "27AADCS5678B1Z9",
-      stateCode: "27",
-      stateName: "Maharashtra",
-      partyType: "supplier",
-      ledgerId: creditorLedger.id,
-    },
+  const secret = await seedCompanyBooks({
+    name: "Secret Co",
+    legalName: "Secret Co Private Limited",
+    gstin: "29AABCS0000S1Z9",
+    stateCode: "29",
+    stateName: "Karnataka",
+    city: "Bengaluru",
+    pincode: "560001",
   });
 
-  // Inter-state customer for IGST demos
-  const igstDebtor = await ledger("Delhi Buyer", "Sundry Debtors");
-  await prisma.party.create({
-    data: {
-      companyId: company.id,
-      name: "Delhi Buyer",
-      gstin: "07AABCD9999C1Z0",
-      stateCode: "07",
-      stateName: "Delhi",
-      partyType: "customer",
-      ledgerId: igstDebtor.id,
-    },
-  });
-
-  await prisma.voucherType.createMany({
+  await prisma.membership.createMany({
     data: [
-      { companyId: company.id, name: "Sales", abbreviation: "Sls" },
-      { companyId: company.id, name: "Purchase", abbreviation: "Pur" },
-      { companyId: company.id, name: "Payment", abbreviation: "Pmt" },
-      { companyId: company.id, name: "Receipt", abbreviation: "Rcpt" },
-      { companyId: company.id, name: "Journal", abbreviation: "Jrnl" },
+      { userId: owner.id, companyId: acme.company.id, role: "owner" },
+      { userId: owner.id, companyId: beta.company.id, role: "owner" },
+      { userId: ca.id, companyId: acme.company.id, role: "ca_viewer" },
+      { userId: other.id, companyId: secret.company.id, role: "owner" },
     ],
   });
 
-  const godown = await prisma.godown.create({
-    data: { companyId: company.id, name: "Main Godown", isPrimary: true },
+  await prisma.user.update({
+    where: { id: owner.id },
+    data: { activeCompanyId: acme.company.id },
+  });
+  await prisma.user.update({
+    where: { id: ca.id },
+    data: { activeCompanyId: acme.company.id },
+  });
+  await prisma.user.update({
+    where: { id: other.id },
+    data: { activeCompanyId: secret.company.id },
   });
 
-  const item = await prisma.item.create({
-    data: {
-      companyId: company.id,
-      name: "Widget A",
-      sku: "WGT-A",
-      hsnSac: "847130",
-      unit: "NOS",
-      gstRatePct: d(18),
-      salesPrice: d(1000),
-      purchasePrice: d(700),
-    },
-  });
-
-  const itemB = await prisma.item.create({
-    data: {
-      companyId: company.id,
-      name: "Widget B",
-      sku: "WGT-B",
-      hsnSac: "847130",
-      unit: "NOS",
-      gstRatePct: d(18),
-      salesPrice: d(500),
-      purchasePrice: d(350),
-    },
-  });
-
-  // Opening stock
-  await prisma.stockEntry.createMany({
-    data: [
-      {
-        companyId: company.id,
-        itemId: item.id,
-        godownId: godown.id,
-        qtyIn: d(100),
-        qtyOut: d(0),
-        note: "Opening stock",
-      },
-      {
-        companyId: company.id,
-        itemId: itemB.id,
-        godownId: godown.id,
-        qtyIn: d(50),
-        qtyOut: d(0),
-        note: "Opening stock",
-      },
-    ],
-  });
-
-  // Pricing plans
   for (const p of PRICING_PLANS) {
     await prisma.pricingPlan.create({
       data: {
@@ -234,25 +305,122 @@ async function main() {
       },
     });
   }
-
   const growth = await prisma.pricingPlan.findUniqueOrThrow({
     where: { code: "growth" },
   });
   await prisma.companySubscription.create({
     data: {
-      companyId: company.id,
+      companyId: acme.company.id,
       planId: growth.id,
       status: "trial",
       currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     },
   });
 
+  // Sample vouchers for Acme (CA demo coherent)
+  const saleDate = "2025-09-01";
+  await postPurchaseVoucher({
+    companyId: acme.company.id,
+    partyId: acme.supplier.id,
+    date: saleDate,
+    isIntraState: true,
+    placeOfSupply: "27",
+    narration: "Opening purchase for demo",
+    items: [
+      { itemId: acme.itemA.id, quantity: 10, rate: 700, gstRatePct: 18 },
+    ],
+  });
+  await postSalesVoucher({
+    companyId: acme.company.id,
+    partyId: acme.customer.id,
+    date: saleDate,
+    isIntraState: true,
+    placeOfSupply: "27",
+    narration: "Demo intra-state sale",
+    items: [
+      { itemId: acme.itemA.id, quantity: 2, rate: 1000, gstRatePct: 18 },
+    ],
+  });
+
+  // Secret company has its own sale — must not leak to Acme session
+  await postSalesVoucher({
+    companyId: secret.company.id,
+    partyId: secret.customer.id,
+    date: saleDate,
+    isIntraState: true,
+    placeOfSupply: "29",
+    narration: "SECRET voucher — tenancy isolation",
+    items: [
+      { itemId: secret.itemA.id, quantity: 1, rate: 9999, gstRatePct: 18 },
+    ],
+  });
+
+  const referral = await prisma.affiliateReferral.create({
+    data: {
+      referrerId: owner.id,
+      refereeEmail: "prospect@example.com",
+      code: "TILLA-DEMO",
+      status: "converted",
+      refereeId: other.id,
+    },
+  });
+  await prisma.affiliateEarning.createMany({
+    data: [
+      {
+        referralId: referral.id,
+        amountInr: d(599),
+        planCode: "growth",
+        status: "accrued",
+        note: "First month commission (stub)",
+      },
+      {
+        referralId: referral.id,
+        amountInr: d(200),
+        planCode: "growth",
+        status: "paid_stub",
+        note: "Prior stub payout (not live PG)",
+      },
+    ],
+  });
+
+  await prisma.companyInvite.create({
+    data: {
+      companyId: acme.company.id,
+      email: "ca@tilla.app",
+      role: "ca_viewer",
+      token: "demo-ca-invite-token",
+      status: "accepted",
+      invitedById: owner.id,
+    },
+  });
+
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        companyId: acme.company.id,
+        userId: owner.id,
+        action: "seed.complete",
+        entityType: "Company",
+        entityId: acme.company.id,
+        summary: "Demo seed completed for Acme Traders FY 2025-26",
+      },
+      {
+        companyId: acme.company.id,
+        userId: owner.id,
+        action: "voucher.posted",
+        entityType: "Voucher",
+        summary: "Seeded demo sales + purchase vouchers",
+      },
+    ],
+  });
+
   console.log("Seed complete.");
-  console.log("  Login: demo@tilla.app / demo1234");
-  console.log(`  Company: ${company.name} (${company.id})`);
-  console.log(`  Customer: ${party.name} · Supplier: ${supplier.name}`);
-  console.log(`  Item: ${item.name} · Cash: ${cash.name} · Bank: ${bank.name}`);
-  console.log(`  Referral code: TILLA-DEMO`);
+  console.log("  Owner: demo@tilla.app / demo1234 (Acme Traders + Beta Retail)");
+  console.log("  CA:    ca@tilla.app / demo1234 (Acme, ca_viewer)");
+  console.log("  Other: other@tilla.app / demo1234 (Secret Co only)");
+  console.log(`  Acme: ${acme.company.id}`);
+  console.log(`  Secret (isolation): ${secret.company.id}`);
+  console.log("  Referral code: TILLA-DEMO");
 }
 
 main()

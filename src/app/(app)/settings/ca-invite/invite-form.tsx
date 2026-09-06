@@ -45,6 +45,7 @@ export function InviteForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            data-testid="invite-email"
             placeholder="ca@example.com"
           />
         </div>
@@ -71,6 +72,7 @@ export function InviteForm() {
       ) : null}
       <button
         type="submit"
+        data-testid="invite-submit"
         disabled={loading}
         className="rounded-md bg-tilla-600 px-4 py-2 text-sm font-medium text-white hover:bg-tilla-700 disabled:opacity-60"
       >

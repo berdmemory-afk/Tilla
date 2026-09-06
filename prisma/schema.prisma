@@ -17,6 +17,7 @@ model User {
   image         String?
   passwordHash  String?
   referralCode  String?   @unique
+  activeCompanyId String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
@@ -73,10 +74,15 @@ model Company {
   addressLine1 String?
   city         String?
   pincode      String?
+  financialYearStartMonth Int @default(4) // Indian FY starts April
+  fyLabel      String   @default("2025-26")
+  booksLocked  Boolean  @default(false)
+  booksLockedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   memberships  Membership[]
+  auditLogs    AuditLog[]
   ledgers      Ledger[]
   voucherTypes VoucherType[]
   vouchers     Voucher[]
@@ -368,6 +374,24 @@ model AffiliateEarning {
   referral    AffiliateReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
 
   @@index([referralId])
+}
+
+
+// --- Audit trail (visibility for CA demo) ---
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  userId     String?
+  action     String   // voucher.posted | invite.created | fy.locked | fy.unlocked | company.switched | import.tally_stub | checkout.stub
+  entityType String?
+  entityId   String?
+  summary    String
+  metaJson   String   @default("{}")
+  createdAt  DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
 }
 
 // --- Pricing / subscription (checkout stubbed) ---

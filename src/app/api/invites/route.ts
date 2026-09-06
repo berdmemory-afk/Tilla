@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { writeAudit } from "@/lib/audit";
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -50,6 +51,15 @@ export async function POST(req: Request) {
 
   // Stub: no email send — share link locally
   const shareUrl = `/login?invite=${invite.token}`;
+
+  await writeAudit({
+    companyId: session.user.companyId,
+    userId: session.user.id,
+    action: "invite.created",
+    entityType: "CompanyInvite",
+    entityId: invite.id,
+    summary: `Invited ${invite.email} as ${invite.role}`,
+  });
 
   return NextResponse.json({ invite, shareUrl }, { status: 201 });
 }

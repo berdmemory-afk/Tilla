@@ -17,13 +17,13 @@ export default async function InventoryPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Inventory / Godown stock</h1>
+      <h1 className="text-2xl font-semibold" data-testid="inventory-heading">Inventory / Godown stock</h1>
       <p className="mt-1 text-sm text-slate-500">
         Balances update when sales (qty out) and purchases (qty in) are posted
       </p>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full text-left text-sm">
+        <table className="min-w-full text-left text-sm" data-testid="inventory-balances">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-4 py-3 font-medium">Item</th>

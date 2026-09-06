@@ -4,6 +4,7 @@ import type { SalesVoucherInput } from "@/lib/validations/sales-voucher";
 import { assertBalanced, nextVoucherNumber } from "./balance";
 import { d } from "./decimal";
 import { getPrimaryGodown, recordStockMovements } from "@/lib/inventory/stock";
+import { assertBooksOpen } from "@/lib/fy-lock";
 
 /**
  * Post an intra/inter-state GST sales voucher with double-entry lines:
@@ -13,6 +14,7 @@ import { getPrimaryGodown, recordStockMovements } from "@/lib/inventory/stock";
  * Also records stock qtyOut at primary (or given) godown.
  */
 export async function postSalesVoucher(input: SalesVoucherInput) {
+  await assertBooksOpen(input.companyId);
   const company = await prisma.company.findUniqueOrThrow({
     where: { id: input.companyId },
   });

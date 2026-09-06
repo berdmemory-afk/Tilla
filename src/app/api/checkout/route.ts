@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getPlanByCode } from "@/lib/pricing/plans";
 import { getPaymentProvider } from "@/lib/payments/provider";
 import { prisma } from "@/lib/prisma";
+import { writeAudit } from "@/lib/audit";
 
 /**
  * Checkout stub — does NOT charge. Creates/updates subscription as checkout_stub.
@@ -48,6 +49,15 @@ export async function POST(req: Request) {
       status: "checkout_stub",
       paymentProviderRef: checkout.providerRef,
     },
+  });
+
+  await writeAudit({
+    companyId: session.user.companyId,
+    userId: session.user.id,
+    action: "checkout.stub",
+    entityType: "CompanySubscription",
+    summary: `Checkout stub for plan ${plan.code} (no live PG charge)`,
+    meta: { planCode: plan.code, providerRef: checkout.providerRef },
   });
 
   return NextResponse.json({ checkout, plan: planCfg });

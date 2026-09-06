@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { NextAuthConfig } from "next-auth";
+import { resolveCompanyContext } from "@/lib/company-context";
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -23,18 +24,15 @@ export const authConfig: NextAuthConfig = {
         const valid = await compare(password, user.passwordHash);
         if (!valid) return null;
 
-        const membership = await prisma.membership.findFirst({
-          where: { userId: user.id },
-          include: { company: true },
-        });
+        const ctx = await resolveCompanyContext(user.id);
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          companyId: membership?.companyId,
-          companyName: membership?.company.name,
-          role: membership?.role,
+          companyId: ctx?.companyId,
+          companyName: ctx?.companyName,
+          role: ctx?.role,
         };
       },
     }),
@@ -44,7 +42,7 @@ export const authConfig: NextAuthConfig = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         const u = user as {
           id: string;
@@ -57,14 +55,33 @@ export const authConfig: NextAuthConfig = {
         token.companyName = u.companyName;
         token.role = u.role;
       }
+      // Refresh company context on update() or every session read path via trigger
+      if ((trigger === "update" || !token.companyId) && token.sub) {
+        const ctx = await resolveCompanyContext(token.sub as string);
+        if (ctx) {
+          token.companyId = ctx.companyId;
+          token.companyName = ctx.companyName;
+          token.role = ctx.role;
+        }
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub as string;
-        session.user.companyId = token.companyId as string | undefined;
-        session.user.companyName = token.companyName as string | undefined;
-        session.user.role = token.role as string | undefined;
+        // Always re-resolve so company switch / FY role stay fresh without re-login
+        if (token.sub) {
+          const ctx = await resolveCompanyContext(token.sub as string);
+          if (ctx) {
+            session.user.companyId = ctx.companyId;
+            session.user.companyName = ctx.companyName;
+            session.user.role = ctx.role;
+          } else {
+            session.user.companyId = token.companyId as string | undefined;
+            session.user.companyName = token.companyName as string | undefined;
+            session.user.role = token.role as string | undefined;
+          }
+        }
       }
       return session;
     },

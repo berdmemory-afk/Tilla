@@ -4,6 +4,7 @@ import type { PurchaseVoucherInput } from "@/lib/validations/purchase-voucher";
 import { assertBalanced, nextVoucherNumber } from "./balance";
 import { d } from "./decimal";
 import { getPrimaryGodown, recordStockMovements } from "@/lib/inventory/stock";
+import { assertBooksOpen } from "@/lib/fy-lock";
 
 /**
  * Post GST purchase voucher with ITC:
@@ -13,6 +14,7 @@ import { getPrimaryGodown, recordStockMovements } from "@/lib/inventory/stock";
  * Also records stock qtyIn at primary (or given) godown.
  */
 export async function postPurchaseVoucher(input: PurchaseVoucherInput) {
+  await assertBooksOpen(input.companyId);
   const company = await prisma.company.findUniqueOrThrow({
     where: { id: input.companyId },
   });

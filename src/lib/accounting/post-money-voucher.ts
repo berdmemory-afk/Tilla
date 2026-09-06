@@ -6,11 +6,13 @@ import type {
 } from "@/lib/validations/money-voucher";
 import { assertBalanced, nextVoucherNumber } from "./balance";
 import { d } from "./decimal";
+import { assertBooksOpen } from "@/lib/fy-lock";
 
 /**
  * Payment: Dr Party, Cr Cash/Bank
  */
 export async function postPaymentVoucher(input: PaymentReceiptInput) {
+  await assertBooksOpen(input.companyId);
   const party = await prisma.party.findFirstOrThrow({
     where: { id: input.partyId, companyId: input.companyId },
   });
@@ -76,6 +78,7 @@ export async function postPaymentVoucher(input: PaymentReceiptInput) {
  * Receipt: Dr Cash/Bank, Cr Party
  */
 export async function postReceiptVoucher(input: PaymentReceiptInput) {
+  await assertBooksOpen(input.companyId);
   const party = await prisma.party.findFirstOrThrow({
     where: { id: input.partyId, companyId: input.companyId },
   });
@@ -141,6 +144,7 @@ export async function postReceiptVoucher(input: PaymentReceiptInput) {
  * Journal: arbitrary balanced lines
  */
 export async function postJournalVoucher(input: JournalVoucherInput) {
+  await assertBooksOpen(input.companyId);
   const lines = input.lines.map((l) => ({
     ledgerId: l.ledgerId,
     debit: round2(l.debit),
@@ -171,6 +175,79 @@ export async function postJournalVoucher(input: JournalVoucherInput) {
       date: new Date(input.date),
       narration: input.narration ?? "Journal entry",
       totalAmount: d(debitSum),
+      status: "posted",
+      lines: {
+        create: lines.map((l) => ({
+          ledgerId: l.ledgerId,
+          debit: d(l.debit),
+          credit: d(l.credit),
+          narration: l.narration,
+        })),
+      },
+    },
+    include: {
+      lines: { include: { ledger: true } },
+      voucherType: true,
+    },
+  });
+
+  return { voucher };
+}
+
+
+/**
+ * Contra: transfer between Cash and Bank (or two cash ledgers).
+ * Dr toLedger, Cr fromLedger
+ */
+export async function postContraVoucher(input: {
+  companyId: string;
+  date: string;
+  amount: number;
+  fromLedgerId: string;
+  toLedgerId: string;
+  narration?: string;
+}) {
+  await assertBooksOpen(input.companyId);
+  if (input.fromLedgerId === input.toLedgerId) {
+    throw new Error("Contra requires two different ledgers");
+  }
+  const from = await prisma.ledger.findFirstOrThrow({
+    where: { id: input.fromLedgerId, companyId: input.companyId },
+  });
+  const to = await prisma.ledger.findFirstOrThrow({
+    where: { id: input.toLedgerId, companyId: input.companyId },
+  });
+  const voucherType = await prisma.voucherType.findFirstOrThrow({
+    where: { companyId: input.companyId, name: "Contra" },
+  });
+  const count = await prisma.voucher.count({
+    where: { companyId: input.companyId, voucherTypeId: voucherType.id },
+  });
+  const amount = round2(input.amount);
+  const lines = [
+    {
+      ledgerId: to.id,
+      debit: amount,
+      credit: 0,
+      narration: `Contra from ${from.name}`,
+    },
+    {
+      ledgerId: from.id,
+      debit: 0,
+      credit: amount,
+      narration: `Contra to ${to.name}`,
+    },
+  ];
+  assertBalanced(lines);
+
+  const voucher = await prisma.voucher.create({
+    data: {
+      companyId: input.companyId,
+      voucherTypeId: voucherType.id,
+      number: nextVoucherNumber(count),
+      date: new Date(input.date),
+      narration: input.narration ?? `Contra ${from.name} → ${to.name}`,
+      totalAmount: d(amount),
       status: "posted",
       lines: {
         create: lines.map((l) => ({

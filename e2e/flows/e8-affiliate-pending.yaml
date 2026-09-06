@@ -7,6 +7,9 @@ name: E8 affiliate pending
 - assertVisible: { id: affiliate-heading }
 - assertVisible: { id: referral-code }
 - assertVisible: { id: earnings-table }
-- assertNotVisible: Paid
-- assertNotVisible: Pay now
+- assertVisible: accrued
+- assertNotVisible: { id: pay-now-cta }
+- assertNotVisible: { id: checkout-cta }
+- assertNotVisible: { id: mark-paid-cta }
+- assertNotVisible: "Pay now"
 - assertNotVisible: Checkout

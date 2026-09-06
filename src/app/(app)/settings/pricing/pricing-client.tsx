@@ -43,7 +43,8 @@ export function PricingClient({
   return (
     <div>
       {message ? (
-        <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p data-testid="checkout-message"
+          className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
           {message}
         </p>
       ) : null}
@@ -68,6 +69,7 @@ export function PricingClient({
             </ul>
             <button
               type="button"
+              data-testid={`checkout-stub-btn-${p.code}`}
               onClick={() => checkout(p.code)}
               disabled={loading === p.code}
               className="mt-5 w-full rounded-md bg-tilla-600 px-3 py-2 text-sm font-medium text-white hover:bg-tilla-700 disabled:opacity-60"

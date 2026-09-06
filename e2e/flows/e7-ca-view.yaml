@@ -1,0 +1,16 @@
+# E7 CA view: read-only, no referral UI
+appId: tilla-web
+name: E7 CA viewer
+---
+- launchApp: { url: /login }
+- tapOn: { id: login-email }
+- inputText: "ca@tilla.app"
+- tapOn: { id: login-password }
+- inputText: "demo1234"
+- tapOn: { id: login-submit }
+- assertPath: /dashboard
+- assertVisible: { id: active-role }
+- assertVisible: ca_viewer
+- assertNotVisible: { id: nav-settings-affiliate }
+- assertNotVisible: { id: nav-vouchers-sales-new }
+- assertNotVisible: Affiliate

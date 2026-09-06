@@ -1,0 +1,24 @@
+SHIP_GATE: FAIL
+When: 2026-09-06 12:47 IST (UTC 20260906T071735Z)
+Base prior: 3253aaf (j01/j02/j03/j11/security 9/9)
+Unit: vitest 18/18 PASS
+E2E: playwright 14/14 PASS
+  - prior: j01 j02 j03 j11 j-security-smoke
+  - new: j04-purchase-stock, e3-keyboard, e5-gst-strip, e7-ca-view, e8-affiliate
+Infra: next dev -p 3000 (reuseExistingServer); no Contabo; checkout stub only
+Gaps remaining (gate stays FAIL):
+  - J5 payment/receipt balance
+  - J6 journal/contra balance
+  - J7 trial balance
+  - J8 day book
+  - J9 GSTR stub vs books
+  - J12 FY lock
+  - E6 Tally import reconcile
+  - E2 typeahead/stock-on-pick polish
+Notes:
+  - E5: added non-blocking gst-strip on sales form (data-blocks-save=false); e-invoice/e-way remain post-save
+  - E3: minimal keyboard hooks Enter/F2/Alt+I/Ctrl+S/Esc dirty-guard on sales voucher
+  - E7: ca_viewer sidebar hides write + Affiliate/referral nav
+  - E8: affiliate accrued pending; no Pay now/Checkout/Mark paid CTAs
+
+Commit: 82f9e6b

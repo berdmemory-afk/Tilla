@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { salesVoucherSchema } from "@/lib/validations/sales-voucher";
 import { postSalesVoucher } from "@/lib/accounting/post-sales-voucher";
 import { prisma } from "@/lib/prisma";
+import { writeAudit } from "@/lib/audit";
 
 export async function GET() {
   const session = await auth();
@@ -47,6 +48,14 @@ export async function POST(req: Request) {
 
   try {
     const result = await postSalesVoucher(parsed.data);
+    await writeAudit({
+      companyId: session.user.companyId,
+      userId: session.user.id,
+      action: "voucher.posted",
+      entityType: "Voucher",
+      entityId: result.voucher.id,
+      summary: `Posted Sales ${result.voucher.number} ₹${Number(result.voucher.totalAmount).toFixed(2)}`,
+    });
     return NextResponse.json(result, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to post voucher";

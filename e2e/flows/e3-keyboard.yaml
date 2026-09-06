@@ -1,0 +1,20 @@
+# E3 keyboard UX on sales voucher
+appId: tilla-web
+name: E3 sales keyboard
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /vouchers/sales/new }
+- assertVisible: { id: sales-form }
+- assertVisible: { id: sales-keyboard-hints }
+- tapOn: { id: sales-qty }
+- inputText: "2"
+- pressKey: Enter
+- assertFocused: { id: sales-narration }
+- pressKey: Alt+I
+- assertFocused: { id: sales-item }
+- tapOn: { id: sales-narration }
+- inputText: "dirty"
+- pressKey: Escape
+- assertVisible: { id: dirty-guard }
+- pressKey: F2
+# F2 save path covered in Playwright with Ctrl+S as well

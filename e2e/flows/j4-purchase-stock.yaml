@@ -5,6 +5,18 @@ name: J4 purchase stock
 - runFlow: j1-login.yaml
 - launchApp: { url: /vouchers/purchase/new }
 - assertVisible: { id: purchase-form }
-- tapOn: Post purchase voucher
+- tapOn: { id: purchase-party }
+- assertVisible: Local Supplier
+- tapOn: { id: purchase-item }
+- assertVisible: Widget A
+- tapOn: { id: purchase-qty }
+- inputText: "5"
+- tapOn: { id: purchase-narration }
+- inputText: "E2E-J4-narration"
+- assertVisible: { id: purchase-tax-preview }
+- tapOn: { id: purchase-submit }
 - assertPath: /vouchers/purchase
-- assertDb: { stockQtyInIncreased: true }
+- launchApp: { url: /inventory }
+- assertVisible: { id: inventory-heading }
+- assertVisible: { id: inventory-balances }
+- assertDb: { stockQtyInIncreased: true, item: Widget A }
