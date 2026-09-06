@@ -96,7 +96,7 @@ async function main() {
     });
   }
 
-  await ledger("Capital", "Capital Account", { openingCr: 100000 });
+  await ledger("Capital", "Capital Account", { openingCr: 50000 });
   const cash = await ledger("Cash", "Current Assets", { openingDr: 50000 });
   await ledger("Sales", "Sales Accounts", { gstRole: "sales" });
   await ledger("Output CGST", "Duties & Taxes", { gstRole: "output_cgst" });
