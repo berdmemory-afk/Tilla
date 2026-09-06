@@ -1,0 +1,79 @@
+---
+pid: 96065
+cwd: "/workspace"
+command: "cd /workspace/Tilla && python3 << 'END'\nfrom pathlib import Path\n\n# global setup unlock\nPath(\"e2e/global-setup.ts\").write_text('''import { getPrisma, getAcmeCompanyId } from \"./helpers/db\";\n\nasync function globalSetup() {\n  const prisma = getPrisma();\n  try {\n    const companyId = await getAcmeCompanyId(prisma);\n    await prisma.company.update({\n      where: { id: companyId },\n      data: { booksLocked: false, booksLockedAt: null },\n    });\n  } catch (e) {\n    console.warn(\"globalSetup unlock skipped\", e);\n  } finally {\n    await prisma.$disconnect();\n  }\n}\n\nexport default globalSetup;\n''')\n\n# patch playwright config\ncfg = Path(\"playwright.config.ts\")\nt = cfg.read_text()\nif \"globalSetup\" not in t:\n    t = t.replace(\n        'export default defineConfig({',\n        'export default defineConfig({\\n  globalSetup: \"./e2e/global-setup.ts\",',\n    )\n    cfg.write_text(t)\n    print(\"config patched\")\nelse:\n    print(\"config has globalSetup\")\n\n# Harden j05 with unlock preamble + better error\nPath(\"e2e/specs/j05-payment-receipt.spec.ts\").write_text('''import { test, expect } from \"@playwright/test\";\nimport { loginAs } from \"../helpers/auth\";\nimport { getPrisma, getAcmeCompanyId, assertVoucherBalanced } from \"../helpers/db\";\n\nasync function ensureAcmeUnlocked() {\n  const prisma = getPrisma();\n  try {\n    const companyId = await getAcmeCompanyId(prisma);\n    await prisma.company.update({\n      where: { id: companyId },\n      data: { booksLocked: false, booksLockedAt: null },\n    });\n    return companyId;\n  } finally {\n    await prisma.$disconnect();\n  }\n}\n\ntest.describe(\"J5 payment + receipt\", () => {\n  test.beforeEach(async () => {\n    await ensureAcmeUnlocked();\n  });\n\n  test(\"J5 payment posts balanced Dr Party Cr Cash\", async ({ page }) => {\n    const narration = \"E2E-J5-PMT-\" + Date.now();\n    const prisma = getPrisma();\n    const companyId = await getAcmeCompanyId(prisma);\n    const supplier = await prisma.party.findFirstOrThrow({\n      where: { companyId, name: \"Local Supplier\" },\n    });\n    const cash = await prisma.ledger.findFirstOrThrow({\n      where: { companyId, name: \"Cash\" },\n    });\n    await prisma.$disconnect();\n\n    await loginAs(page, \"demo@tilla.app\");\n    await page.goto(\"/vouchers/payment/new\");\n    await expect(page.getByTestId(\"payment-form\")).toBeVisible();\n    await page.getByTestId(\"payment-party\").selectOption(supplier.id);\n    await page.getByTestId(\"payment-cash\").selectOption(cash.id);\n    await page.getByTestId(\"payment-amount\").fill(\"250\");\n    await page.getByTestId(\"payment-narration\").fill(narration);\n    const apiPromise = page.waitForResponse(\n      (r) => r.url().includes(\"/api/vouchers/payment\") && r.request().method() === \"POST\"\n    );\n    await page.getByTestId(\"payment-submit\").click();\n    const apiRes = await apiPromise;\n    if (apiRes.status() !== 201) {\n      console.log(\"payment fail\", await apiRes.json());\n    }\n    expect(apiRes.status()).toBe(201);\n    const body = await apiRes.json();\n    const voucherId = body.voucher?.id as string;\n    expect(voucherId).toBeTruthy();\n    await expect(page).toHaveURL(/\\\\/reports\\\\/day-book/);\n\n    const prisma2 = getPrisma();\n    try {\n      const bal = await assertVoucherBalanced(prisma2, voucherId);\n      expect(bal.debit).toBe(250);\n      const v = await prisma2.voucher.findUniqueOrThrow({\n        where: { id: voucherId },\n        include: { voucherType: true, lines: { include: { ledger: true } } },\n      });\n      expect(v.voucherType.name).toBe(\"Payment\");\n      expect(v.lines.find((l) => Number(l.debit) > 0)?.ledger.name).toMatch(/Local Supplier/i);\n      expect(v.lines.find((l) => Number(l.credit) > 0)?.ledger.name).toBe(\"Cash\");\n    } finally {\n      await prisma2.$disconnect();\n    }\n  });\n\n  test(\"J5 receipt posts balanced Dr Cash Cr Party\", async ({ page }) => {\n    const narration = \"E2E-J5-RCP-\" + Date.now();\n    const prisma = getPrisma();\n    const companyId = await getAcmeCompanyId(prisma);\n    const customer = await prisma.party.findFirstOrThrow({\n      where: { companyId, name: \"Retail Customer\" },\n    });\n    const bank = await prisma.ledger.findFirstOrThrow({\n      where: { companyId, name: \"Bank\" },\n    });\n    await prisma.$disconnect();\n\n    await loginAs(page, \"demo@tilla.app\");\n    await page.goto(\"/vouchers/receipt/new\");\n    await expect(page.getByTestId(\"receipt-form\")).toBeVisible();\n    await page.getByTestId(\"receipt-party\").selectOption(customer.id);\n    await page.getByTestId(\"receipt-cash\").selectOption(bank.id);\n    await page.getByTestId(\"receipt-amount\").fill(\"400\");\n    await page.getByTestId(\"receipt-narration\").fill(narration);\n    const apiPromise = page.waitForResponse(\n      (r) => r.url().includes(\"/api/vouchers/receipt\") && r.request().method() === \"POST\"\n    );\n    await page.getByTestId(\"receipt-submit\").click();\n    const apiRes = await apiPromise;\n    if (apiRes.status() !== 201) {\n      console.log(\"receipt fail\", await apiRes.json());\n    }\n    expect(apiRes.status()).toBe(201);\n    const body = await apiRes.json();\n    const voucherId = body.voucher?.id as string;\n    await expect(page).toHaveURL(/\\\\/reports\\\\/day-book/);\n\n    const prisma2 = getPrisma();\n    try {\n      const bal = await assertVoucherBalanced(prisma2, voucherId);\n      expect(bal.debit).toBe(400);\n      const v = await prisma2.voucher.findUniqueOrThrow({\n        where: { id: voucherId },\n        include: { voucherType: true, lines: { include: { ledger: true } } },\n      });\n      expect(v.voucherType.name).toBe(\"Receipt\");\n      expect(v.lines.find((l) => Number(l.debit) > 0)?.ledger.name).toBe(\"Bank\");\n      expect(v.lines.find((l) => Number(l.credit) > 0)?.ledger.name).toMatch(/Retail Customer/i);\n    } finally {\n      await prisma2.$disconnect();\n    }\n  });\n});\n''')\nprint(\"hardened\")\nprint(Path(\"playwright.config.ts\").read_text())\nEND\n./node_modules/.bin/playwright test --reporter=list; echo EXIT:$?"
+title: "Add globalSetup unlock; harden J5; full suite"
+status: succeeded
+started_at: 2026-09-06T07:32:29.254Z
+running_for_ms: 190597   
+---
+config patched
+hardened
+import { defineConfig, devices } from "@playwright/test";
+
+const PORT = Number(process.env.PORT || 3000);
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${PORT}`;
+
+/**
+ * Maestro-inspired Playwright config.
+ * Journeys J1-J12 live under e2e/specs (see docs/qa/E2E_SHIP_GATE.md).
+ */
+export default defineConfig({
+  globalSetup: "./e2e/global-setup.ts",
+  testDir: "./e2e/specs",
+  fullyParallel: false,
+  workers: 1,
+  retries: 0,
+  timeout: 90_000,
+  expect: { timeout: 20_000 },
+  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
+  use: {
+    baseURL,
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+  },
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  webServer: {
+    command: "npx next dev -p " + String(PORT),
+    url: baseURL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
+});
+
+
+Running 24 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/specs/e3-keyboard.spec.ts:8:7 › E3 sales keyboard UX › E3 Enter Alt+I Esc dirty-guard and Ctrl+S / F2 save hooks (4.3s)
+  ✓   2 [chromium] › e2e/specs/e5-gst-strip.spec.ts:8:7 › E5 GST strip non-blocking › E5 gst-strip present and does not disable save (3.0s)
+  ✓   3 [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers (14.6s)
+  ✓   4 [chromium] › e2e/specs/e7-ca-view.spec.ts:8:7 › E7 CA view read-only no referral › E7 ca_viewer has no affiliate/referral nav and cannot write (9.9s)
+  ✓   5 [chromium] › e2e/specs/e8-affiliate.spec.ts:9:7 › E8 affiliate pending no payout CTAs › E8 shows accrued earnings without Pay/Checkout CTAs (4.6s)
+  ✓   6 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (72ms)
+  ✓   7 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (465ms)
+  ✓   8 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (3.2s)
+  ✓   9 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (1.8s)
+  ✓  10 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (801ms)
+  ✓  11 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (511ms)
+  ✓  12 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (3.5s)
+  ✓  13 [chromium] › e2e/specs/j03-inter-sales.spec.ts:9:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (3.4s)
+  ✓  14 [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances (14.7s)
+  ✓  15 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:24:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash (10.3s)
+  ✓  16 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:73:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party (13.2s)
+  ✓  17 [chromium] › e2e/specs/j06-journal-contra.spec.ts:9:7 › J6 journal + contra › J6 journal posts balanced two-line entry (16.2s)
+  ✓  18 [chromium] › e2e/specs/j06-journal-contra.spec.ts:48:7 › J6 journal + contra › J6 contra posts balanced Cash↔Bank transfer (12.2s)
+  ✓  19 [chromium] › e2e/specs/j07-trial-balance.spec.ts:14:7 › J7 trial balance › J7 TB UI Balanced and DB totals match after journal (7.7s)
+  ✓  20 [chromium] › e2e/specs/j08-day-book.spec.ts:7:7 › J8 day book › J8 day book lists recently posted payment (5.0s)
+  ✓  21 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:6:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books (21.7s)
+  ✓  22 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:62:7 › J9 GSTR drafts vs books › J9 GSTR-3B draft outward matches sales books (9.3s)
+  ✓  23 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (7.1s)
+  ✓  24 [chromium] › e2e/specs/j12-fy-lock.spec.ts:22:7 › J12 FY lock › J12 lock blocks payment post; unlock restores (20.1s)
+
+  24 passed (3.2m)
+EXIT:0
+
+---
+exit_code: 0
+elapsed_ms: 190597
+ended_at: 2026-09-06T07:35:39.851Z
+---

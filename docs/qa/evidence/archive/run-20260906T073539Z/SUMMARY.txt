@@ -1,0 +1,8 @@
+Tilla Playwright ship-gate — green run
+When: 2026-09-06 13:05 IST / 2026-09-06T07:35:39Z
+Result: 24 passed (3.2m), exit 0
+Unit: 18/18 vitest
+Prior tip SHA: 22187af
+Hardening: globalSetup + J5 beforeEach Acme unlock
+Log: docs/qa/evidence/e2e-run-20260906T073539Z.log
+SHIP_GATE: PASS (pre-PG; live PG out of scope)
