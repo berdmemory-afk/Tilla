@@ -12,6 +12,8 @@ const nav = [
   { href: "/vouchers/sales/new", label: "New Sales", write: true, referral: false },
   { href: "/vouchers/purchase", label: "Purchase", write: false, referral: false },
   { href: "/vouchers/purchase/new", label: "New Purchase", write: true, referral: false },
+  { href: "/vouchers/credit-note/new", label: "Credit Note", write: true, referral: false },
+  { href: "/vouchers/debit-note/new", label: "Debit Note", write: true, referral: false },
   { href: "/vouchers/payment/new", label: "Payment", write: true, referral: false },
   { href: "/vouchers/receipt/new", label: "Receipt", write: true, referral: false },
   { href: "/vouchers/journal/new", label: "Journal", write: true, referral: false },

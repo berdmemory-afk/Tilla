@@ -243,11 +243,14 @@ model Voucher {
   igstAmount    Decimal  @default(0)
   totalAmount   Decimal  @default(0)
   status        String   @default("posted") // draft | posted | cancelled
+  againstVoucherId String? // credit/debit note against sales/purchase
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   voucherType   VoucherType @relation(fields: [voucherTypeId], references: [id])
   party         Party?   @relation(fields: [partyId], references: [id])
+  againstVoucher Voucher? @relation("VoucherAgainst", fields: [againstVoucherId], references: [id])
+  relatedNotes  Voucher[] @relation("VoucherAgainst")
   lines         VoucherLine[]
   items         VoucherItem[]
   stockEntries  StockEntry[]
@@ -256,6 +259,7 @@ model Voucher {
 
   @@unique([companyId, voucherTypeId, number])
   @@index([companyId, date])
+  @@index([againstVoucherId])
 }
 
 model VoucherLine {
