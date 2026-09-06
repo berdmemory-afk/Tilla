@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth (Auth.js / NextAuth) ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Multi-tenant company ---
+
+model Company {
+  id           String   @id @default(cuid())
+  name         String
+  legalName    String?
+  gstin        String?
+  stateCode    String   // e.g. "27" Maharashtra
+  stateName    String
+  addressLine1 String?
+  city         String?
+  pincode      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+  ledgers     Ledger[]
+  voucherTypes VoucherType[]
+  vouchers    Voucher[]
+  parties     Party[]
+  items       Item[]
+  godowns     Godown[]
+  stockEntries StockEntry[]
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  role      String   // owner | accountant | ca_viewer
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+}
+
+// --- Chart of Accounts (Indian-style groups) ---
+
+model LedgerGroup {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  nature    String   // asset | liability | income | expense | equity
+  parentId  String?
+  createdAt DateTime @default(now())
+  ledgers   Ledger[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model Ledger {
+  id           String   @id @default(cuid())
+  companyId    String
+  groupId      String?
+  name         String
+  code         String?
+  isSystem     Boolean  @default(false)
+  gstRole      String?  // output_cgst | output_sgst | output_igst | input_cgst | input_sgst | input_igst | sales | purchase | null
+  openingDr    Decimal  @default(0)
+  openingCr    Decimal  @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  group        LedgerGroup? @relation(fields: [groupId], references: [id])
+  lines        VoucherLine[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+// --- Parties (customers / suppliers) ---
+
+model Party {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  gstin     String?
+  stateCode String?
+  stateName String?
+  partyType String   @default("customer") // customer | supplier | both
+  ledgerId  String?  // linked sundry debtor/creditor ledger
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vouchers  Voucher[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+// --- Inventory ---
+
+model Godown {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stockEntries StockEntry[]
+
+  @@unique([companyId, name])
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  sku         String?
+  hsnSac      String?
+  unit        String   @default("NOS")
+  gstRatePct  Decimal  @default(18)
+  salesPrice  Decimal  @default(0)
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  voucherItems VoucherItem[]
+  stockEntries StockEntry[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model StockEntry {
+  id        String   @id @default(cuid())
+  companyId String
+  itemId    String
+  godownId  String
+  qtyIn     Decimal  @default(0)
+  qtyOut    Decimal  @default(0)
+  voucherId String?
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id])
+  godown    Godown   @relation(fields: [godownId], references: [id])
+
+  @@index([companyId, itemId])
+}
+
+// --- Vouchers (double-entry) ---
+
+model VoucherType {
+  id        String    @id @default(cuid())
+  companyId String
+  name      String    // Sales | Purchase | Payment | Receipt | Journal | Contra
+  abbreviation String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vouchers  Voucher[]
+
+  @@unique([companyId, name])
+}
+
+model Voucher {
+  id            String   @id @default(cuid())
+  companyId     String
+  voucherTypeId String
+  number        String
+  date          DateTime
+  partyId       String?
+  narration     String?
+  placeOfSupply String?  // state code
+  isIntraState  Boolean  @default(true)
+  taxableAmount Decimal  @default(0)
+  cgstAmount    Decimal  @default(0)
+  sgstAmount    Decimal  @default(0)
+  igstAmount    Decimal  @default(0)
+  totalAmount   Decimal  @default(0)
+  status        String   @default("posted") // draft | posted | cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  voucherType   VoucherType @relation(fields: [voucherTypeId], references: [id])
+  party         Party?   @relation(fields: [partyId], references: [id])
+  lines         VoucherLine[]
+  items         VoucherItem[]
+
+  @@unique([companyId, voucherTypeId, number])
+  @@index([companyId, date])
+}
+
+model VoucherLine {
+  id        String  @id @default(cuid())
+  voucherId String
+  ledgerId  String
+  debit     Decimal @default(0)
+  credit    Decimal @default(0)
+  narration String?
+  voucher   Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  ledger    Ledger  @relation(fields: [ledgerId], references: [id])
+
+  @@index([voucherId])
+  @@index([ledgerId])
+}
+
+model VoucherItem {
+  id            String  @id @default(cuid())
+  voucherId     String
+  itemId        String
+  quantity      Decimal
+  rate          Decimal
+  taxableAmount Decimal
+  gstRatePct    Decimal
+  cgstAmount    Decimal @default(0)
+  sgstAmount    Decimal @default(0)
+  igstAmount    Decimal @default(0)
+  voucher       Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  item          Item    @relation(fields: [itemId], references: [id])
+
+  @@index([voucherId])
+}
