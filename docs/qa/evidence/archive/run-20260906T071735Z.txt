@@ -21,4 +21,4 @@ Notes:
   - E7: ca_viewer sidebar hides write + Affiliate/referral nav
   - E8: affiliate accrued pending; no Pay now/Checkout/Mark paid CTAs
 
-Commit: 82f9e6b
+Commit: 9cff90e

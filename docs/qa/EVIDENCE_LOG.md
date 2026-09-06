@@ -8,7 +8,7 @@ Append-only. Newest first.
 - Unit: 18/18 PASS (vitest)
 - E2E: 14/14 PASS (prior 9 + j04 e3 e5 e7 e8)
 - Archive: docs/qa/evidence/archive/run-20260906T071735Z.txt
-- SHA: 82f9e6b
+- SHA: 9cff90e
 - Log: docs/qa/evidence/e2e-run-20260906T071735Z.log
 - Specs added: e2e/specs/j04-purchase-stock.spec.ts, e3-keyboard.spec.ts, e5-gst-strip.spec.ts, e7-ca-view.spec.ts, e8-affiliate.spec.ts
 - Flows: j4-purchase-stock.yaml (fleshed), e8-affiliate-pending.yaml (fleshed), e3-keyboard.yaml, e7-ca-view.yaml
