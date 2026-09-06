@@ -17,11 +17,15 @@ export type EWayResult = {
   ok: boolean;
   ewayBillNo?: string;
   message: string;
+  mode: "stub";
 };
 
-export async function generateEWayBill(_payload: EWayPayload): Promise<EWayResult> {
+export async function generateEWayBill(payload: EWayPayload): Promise<EWayResult> {
+  const stubNo = `STUB${Date.now().toString().slice(-10)}`;
   return {
-    ok: false,
-    message: "E-way bill stub: GSTN integration not configured (foundation)",
+    ok: true,
+    ewayBillNo: stubNo,
+    message: `E-way stub OK for doc ${payload.documentNumber} — not submitted to GSTN`,
+    mode: "stub",
   };
 }

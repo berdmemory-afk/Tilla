@@ -1,21 +1,21 @@
 import { z } from "zod";
 
-export const salesVoucherItemSchema = z.object({
+export const purchaseVoucherItemSchema = z.object({
   itemId: z.string().min(1),
   quantity: z.coerce.number().positive(),
   rate: z.coerce.number().nonnegative(),
   gstRatePct: z.coerce.number().nonnegative().default(18),
 });
 
-export const salesVoucherSchema = z.object({
+export const purchaseVoucherSchema = z.object({
   companyId: z.string().min(1),
   partyId: z.string().min(1),
-  date: z.string().min(1), // ISO date YYYY-MM-DD
+  date: z.string().min(1),
   narration: z.string().optional(),
   isIntraState: z.boolean().default(true),
   placeOfSupply: z.string().optional(),
   godownId: z.string().optional(),
-  items: z.array(salesVoucherItemSchema).min(1),
+  items: z.array(purchaseVoucherItemSchema).min(1),
 });
 
-export type SalesVoucherInput = z.infer<typeof salesVoucherSchema>;
+export type PurchaseVoucherInput = z.infer<typeof purchaseVoucherSchema>;

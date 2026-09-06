@@ -1,18 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { computeGst, invoiceTotal, round2 } from "@/lib/tax/gst";
-import type { SalesVoucherInput } from "@/lib/validations/sales-voucher";
+import type { PurchaseVoucherInput } from "@/lib/validations/purchase-voucher";
 import { assertBalanced, nextVoucherNumber } from "./balance";
 import { d } from "./decimal";
 import { getPrimaryGodown, recordStockMovements } from "@/lib/inventory/stock";
 
 /**
- * Post an intra/inter-state GST sales voucher with double-entry lines:
- *   Dr Party (Sundry Debtors)
- *   Cr Sales
- *   Cr Output CGST / SGST (intra) or Output IGST (inter)
- * Also records stock qtyOut at primary (or given) godown.
+ * Post GST purchase voucher with ITC:
+ *   Dr Purchase (taxable)
+ *   Dr Input CGST / SGST (intra) or Input IGST (inter)
+ *   Cr Party (Sundry Creditors) total
+ * Also records stock qtyIn at primary (or given) godown.
  */
-export async function postSalesVoucher(input: SalesVoucherInput) {
+export async function postPurchaseVoucher(input: PurchaseVoucherInput) {
   const company = await prisma.company.findUniqueOrThrow({
     where: { id: input.companyId },
   });
@@ -20,24 +20,24 @@ export async function postSalesVoucher(input: SalesVoucherInput) {
     where: { id: input.partyId, companyId: input.companyId },
   });
   if (!party.ledgerId) {
-    throw new Error("Party has no linked debtor ledger");
+    throw new Error("Party has no linked creditor ledger");
   }
 
-  const salesLedger = await prisma.ledger.findFirstOrThrow({
-    where: { companyId: input.companyId, gstRole: "sales" },
+  const purchaseLedger = await prisma.ledger.findFirstOrThrow({
+    where: { companyId: input.companyId, gstRole: "purchase" },
   });
   const cgstLedger = await prisma.ledger.findFirstOrThrow({
-    where: { companyId: input.companyId, gstRole: "output_cgst" },
+    where: { companyId: input.companyId, gstRole: "input_cgst" },
   });
   const sgstLedger = await prisma.ledger.findFirstOrThrow({
-    where: { companyId: input.companyId, gstRole: "output_sgst" },
+    where: { companyId: input.companyId, gstRole: "input_sgst" },
   });
   const igstLedger = await prisma.ledger.findFirstOrThrow({
-    where: { companyId: input.companyId, gstRole: "output_igst" },
+    where: { companyId: input.companyId, gstRole: "input_igst" },
   });
 
   const voucherType = await prisma.voucherType.findFirstOrThrow({
-    where: { companyId: input.companyId, name: "Sales" },
+    where: { companyId: input.companyId, name: "Purchase" },
   });
 
   const count = await prisma.voucher.count({
@@ -90,31 +90,47 @@ export async function postSalesVoucher(input: SalesVoucherInput) {
   const totalTax = round2(cgstTotal + sgstTotal + igstTotal);
   const totalAmount = round2(taxableTotal + totalTax);
 
-  const lines: { ledgerId: string; debit: number; credit: number; narration?: string }[] = [
+  const lines = [
     {
-      ledgerId: party.ledgerId,
-      debit: totalAmount,
+      ledgerId: purchaseLedger.id,
+      debit: taxableTotal,
       credit: 0,
-      narration: "Sales invoice receivable",
-    },
-    {
-      ledgerId: salesLedger.id,
-      debit: 0,
-      credit: taxableTotal,
-      narration: "Sales",
+      narration: "Purchase",
     },
   ];
 
   if (input.isIntraState) {
     if (cgstTotal > 0) {
-      lines.push({ ledgerId: cgstLedger.id, debit: 0, credit: cgstTotal, narration: "Output CGST" });
+      lines.push({
+        ledgerId: cgstLedger.id,
+        debit: cgstTotal,
+        credit: 0,
+        narration: "Input CGST",
+      });
     }
     if (sgstTotal > 0) {
-      lines.push({ ledgerId: sgstLedger.id, debit: 0, credit: sgstTotal, narration: "Output SGST" });
+      lines.push({
+        ledgerId: sgstLedger.id,
+        debit: sgstTotal,
+        credit: 0,
+        narration: "Input SGST",
+      });
     }
   } else if (igstTotal > 0) {
-    lines.push({ ledgerId: igstLedger.id, debit: 0, credit: igstTotal, narration: "Output IGST" });
+    lines.push({
+      ledgerId: igstLedger.id,
+      debit: igstTotal,
+      credit: 0,
+      narration: "Input IGST",
+    });
   }
+
+  lines.push({
+    ledgerId: party.ledgerId,
+    debit: 0,
+    credit: totalAmount,
+    narration: "Purchase payable",
+  });
 
   assertBalanced(lines);
 
@@ -132,7 +148,7 @@ export async function postSalesVoucher(input: SalesVoucherInput) {
         number,
         date: new Date(input.date),
         partyId: party.id,
-        narration: input.narration ?? `Sales to ${party.name}`,
+        narration: input.narration ?? `Purchase from ${party.name}`,
         placeOfSupply: input.placeOfSupply ?? company.stateCode,
         isIntraState: input.isIntraState,
         taxableAmount: d(taxableTotal),
@@ -177,9 +193,9 @@ export async function postSalesVoucher(input: SalesVoucherInput) {
       movements: lineItems.map((li) => ({
         itemId: li.itemId,
         quantity: li.quantity,
-        direction: "out" as const,
+        direction: "in" as const,
       })),
-      note: `Sales #${number}`,
+      note: `Purchase #${number}`,
     });
 
     return v;

@@ -16,11 +16,15 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
+  referralCode  String?   @unique
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
   memberships   Membership[]
+  invitesSent   CompanyInvite[] @relation("InviteSender")
+  referralsMade AffiliateReferral[] @relation("Referrer")
+  referredBy    AffiliateReferral[] @relation("Referee")
 }
 
 model Account {
@@ -72,14 +76,18 @@ model Company {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships Membership[]
-  ledgers     Ledger[]
+  memberships  Membership[]
+  ledgers      Ledger[]
   voucherTypes VoucherType[]
-  vouchers    Voucher[]
-  parties     Party[]
-  items       Item[]
-  godowns     Godown[]
+  vouchers     Voucher[]
+  parties      Party[]
+  items        Item[]
+  godowns      Godown[]
   stockEntries StockEntry[]
+  eInvoices    EInvoiceRecord[]
+  eWayBills    EWayBillRecord[]
+  invites      CompanyInvite[]
+  subscription CompanySubscription?
 }
 
 model Membership {
@@ -163,16 +171,17 @@ model Godown {
 }
 
 model Item {
-  id          String   @id @default(cuid())
-  companyId   String
-  name        String
-  sku         String?
-  hsnSac      String?
-  unit        String   @default("NOS")
-  gstRatePct  Decimal  @default(18)
-  salesPrice  Decimal  @default(0)
-  createdAt   DateTime @default(now())
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  sku          String?
+  hsnSac       String?
+  unit         String   @default("NOS")
+  gstRatePct   Decimal  @default(18)
+  salesPrice   Decimal  @default(0)
+  purchasePrice Decimal @default(0)
+  createdAt    DateTime @default(now())
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   voucherItems VoucherItem[]
   stockEntries StockEntry[]
 
@@ -188,23 +197,26 @@ model StockEntry {
   qtyIn     Decimal  @default(0)
   qtyOut    Decimal  @default(0)
   voucherId String?
+  note      String?
   createdAt DateTime @default(now())
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   item      Item     @relation(fields: [itemId], references: [id])
   godown    Godown   @relation(fields: [godownId], references: [id])
+  voucher   Voucher? @relation(fields: [voucherId], references: [id])
 
   @@index([companyId, itemId])
+  @@index([voucherId])
 }
 
 // --- Vouchers (double-entry) ---
 
 model VoucherType {
-  id        String    @id @default(cuid())
-  companyId String
-  name      String    // Sales | Purchase | Payment | Receipt | Journal | Contra
+  id           String    @id @default(cuid())
+  companyId    String
+  name         String    // Sales | Purchase | Payment | Receipt | Journal | Contra
   abbreviation String
-  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  vouchers  Voucher[]
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vouchers     Voucher[]
 
   @@unique([companyId, name])
 }
@@ -232,6 +244,9 @@ model Voucher {
   party         Party?   @relation(fields: [partyId], references: [id])
   lines         VoucherLine[]
   items         VoucherItem[]
+  stockEntries  StockEntry[]
+  eInvoices     EInvoiceRecord[]
+  eWayBills     EWayBillRecord[]
 
   @@unique([companyId, voucherTypeId, number])
   @@index([companyId, date])
@@ -266,4 +281,119 @@ model VoucherItem {
   item          Item    @relation(fields: [itemId], references: [id])
 
   @@index([voucherId])
+}
+
+// --- GSTN compliance stubs (status storage) ---
+
+model EInvoiceRecord {
+  id          String   @id @default(cuid())
+  companyId   String
+  voucherId   String
+  status      String   @default("pending") // pending | stub_ok | stub_failed | cancelled
+  irn         String?
+  qrCode      String?
+  message     String?
+  requestedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  voucher     Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([voucherId])
+}
+
+model EWayBillRecord {
+  id           String   @id @default(cuid())
+  companyId    String
+  voucherId    String
+  status       String   @default("pending") // pending | stub_ok | stub_failed | cancelled
+  ewayBillNo   String?
+  vehicleNumber String?
+  distanceKm   Int?
+  message      String?
+  requestedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  voucher      Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([voucherId])
+}
+
+// --- CA invite / share ---
+
+model CompanyInvite {
+  id          String    @id @default(cuid())
+  companyId   String
+  email       String
+  role        String    @default("ca_viewer") // ca_viewer | accountant
+  token       String    @unique
+  status      String    @default("pending") // pending | accepted | revoked
+  invitedById String
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id])
+
+  @@index([companyId])
+  @@index([email])
+}
+
+// --- Affiliate (no live payouts) ---
+
+model AffiliateReferral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  refereeId   String?
+  refereeEmail String?
+  code        String
+  status      String   @default("pending") // pending | converted | paid_stub
+  createdAt   DateTime @default(now())
+  referrer    User     @relation("Referrer", fields: [referrerId], references: [id])
+  referee     User?    @relation("Referee", fields: [refereeId], references: [id])
+  earnings    AffiliateEarning[]
+
+  @@index([referrerId])
+  @@index([code])
+}
+
+model AffiliateEarning {
+  id          String   @id @default(cuid())
+  referralId  String
+  amountInr   Decimal  @default(0)
+  planCode    String?
+  status      String   @default("accrued") // accrued | payout_pending | paid_stub
+  note        String?
+  createdAt   DateTime @default(now())
+  referral    AffiliateReferral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+
+  @@index([referralId])
+}
+
+// --- Pricing / subscription (checkout stubbed) ---
+
+model PricingPlan {
+  id            String   @id @default(cuid())
+  code          String   @unique // starter | growth | business
+  name          String
+  priceInrMonthly Int
+  description   String?
+  featuresJson  String   @default("[]")
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  subscriptions CompanySubscription[]
+}
+
+model CompanySubscription {
+  id                 String   @id @default(cuid())
+  companyId          String   @unique
+  planId             String
+  status             String   @default("trial") // trial | active | past_due | cancelled | checkout_stub
+  currentPeriodEnd   DateTime?
+  paymentProviderRef String?  // TODO: set when live PG wired
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan               PricingPlan @relation(fields: [planId], references: [id])
 }

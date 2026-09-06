@@ -20,13 +20,22 @@ export type EInvoiceResult = {
   irn?: string;
   qrCode?: string;
   message: string;
+  mode: "stub";
 };
 
 export async function generateEInvoice(
-  _payload: EInvoicePayload
+  payload: EInvoicePayload
 ): Promise<EInvoiceResult> {
+  // Deterministic stub IRN for local QA (not a real IRN).
+  const stubIrn = `STUBIRN${payload.invoiceNumber}${payload.invoiceDate.replace(/-/g, "")}`.slice(
+    0,
+    64
+  );
   return {
-    ok: false,
-    message: "E-invoice stub: GSTN integration not configured (foundation)",
+    ok: true,
+    irn: stubIrn,
+    qrCode: `stub-qr://${stubIrn}`,
+    message: "E-invoice stub OK — not submitted to GSTN/NIC",
+    mode: "stub",
   };
 }
