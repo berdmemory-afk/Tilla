@@ -1,0 +1,12 @@
+# E8 affiliate: earnings pending; no Paid/checkout CTAs
+appId: tilla-web
+name: E8 affiliate pending
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /settings/affiliate }
+- assertVisible: { id: affiliate-heading }
+- assertVisible: { id: referral-code }
+- assertVisible: { id: earnings-table }
+- assertNotVisible: Paid
+- assertNotVisible: Pay now
+- assertNotVisible: Checkout

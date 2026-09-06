@@ -1,0 +1,13 @@
+# Maestro-inspired: J1 / E1 login demo → dashboard
+appId: tilla-web
+name: J1 login
+---
+- launchApp: { url: /login }
+- assertVisible: { id: login-email }
+- tapOn: { id: login-email }
+- inputText: demo@tilla.app
+- tapOn: { id: login-password }
+- inputText: demo1234
+- tapOn: { id: login-submit }
+- assertVisible: { id: sidebar }
+- assertPath: /dashboard

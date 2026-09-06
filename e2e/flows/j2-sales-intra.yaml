@@ -1,0 +1,15 @@
+# J2 / E4-E5 intra-state sales: UI post, API 201, DB CGST+SGST balanced
+appId: tilla-web
+name: J2 sales intra
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /vouchers/sales/new }
+- assertVisible: { id: sales-form }
+- assertVisible: Tax preview
+- assertVisible: CGST
+- assertVisible: SGST
+- inputText: { id: narration-or-qty, optional: true }
+- tapOn: Post sales voucher
+- assertPath: /vouchers/sales
+- assertApi: { method: POST, path: /api/vouchers/sales, status: 201 }
+- assertDb: { voucherBalanced: true, cgstSgst: true, igst: 0 }

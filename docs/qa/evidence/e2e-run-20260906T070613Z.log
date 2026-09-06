@@ -1,0 +1,61 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (1.1s)
+  ✓  2 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (3.3s)
+  ✓  3 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (1.2s)
+  ✓  4 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (2.0s)
+  ✓  5 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (984ms)
+  ✓  6 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (744ms)
+  ✘  7 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (3.1s)
+  ✘  8 [chromium] › e2e/specs/j03-inter-sales.spec.ts:14:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (2.5s)
+  ✓  9 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (2.9s)
+
+
+  1) [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      26 |     await page.goto("/vouchers/sales/new");
+      27 |     await expect(page.getByTestId("sales-form")).toBeVisible();
+    > 28 |     await page.getByTestId("sales-party").selectOption({ label: /Retail Customer/ });
+         |                                           ^
+      29 |     await page.getByTestId("sales-intra").check();
+      30 |     await page.getByTestId("sales-qty").fill("3");
+      31 |     await page.getByTestId("sales-narration").fill(narration);
+        at /workspace/Tilla/e2e/specs/j02-intra-sales.spec.ts:28:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j02-intra-sales-J2-intra-s-733f1--sales-and-assert-UI-API-DB-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j02-intra-sales-J2-intra-s-733f1--sales-and-assert-UI-API-DB-chromium/error-context.md
+
+  2) [chromium] › e2e/specs/j03-inter-sales.spec.ts:14:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      16 |     await loginAs(page, "demo@tilla.app");
+      17 |     await page.goto("/vouchers/sales/new");
+    > 18 |     await page.getByTestId("sales-party").selectOption({ label: /Delhi Buyer/ });
+         |                                           ^
+      19 |     await page.getByTestId("sales-inter").check();
+      20 |     await page.getByTestId("sales-qty").fill("2");
+      21 |     await page.getByTestId("sales-narration").fill(narration);
+        at /workspace/Tilla/e2e/specs/j03-inter-sales.spec.ts:18:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j03-inter-sales-J3-inter-s-817ac-r-state-sale-with-IGST-only-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j03-inter-sales-J3-inter-s-817ac-r-state-sale-with-IGST-only-chromium/error-context.md
+
+  2 failed
+    [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB 
+    [chromium] › e2e/specs/j03-inter-sales.spec.ts:14:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only 
+  7 passed (30.9s)
+
+To open last HTML report run:
+
+  npx playwright show-report
+

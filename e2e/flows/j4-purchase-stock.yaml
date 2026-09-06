@@ -1,0 +1,10 @@
+# J4 / E4 purchase affecting inventory qtyIn
+appId: tilla-web
+name: J4 purchase stock
+---
+- runFlow: j1-login.yaml
+- launchApp: { url: /vouchers/purchase/new }
+- assertVisible: { id: purchase-form }
+- tapOn: Post purchase voucher
+- assertPath: /vouchers/purchase
+- assertDb: { stockQtyInIncreased: true }
