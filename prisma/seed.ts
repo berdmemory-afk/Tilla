@@ -131,6 +131,8 @@ async function seedCompanyBooks(opts: {
       { companyId: company.id, name: "Receipt", abbreviation: "Rcpt" },
       { companyId: company.id, name: "Journal", abbreviation: "Jrnl" },
       { companyId: company.id, name: "Contra", abbreviation: "Cntr" },
+      { companyId: company.id, name: "Credit Note", abbreviation: "CN" },
+      { companyId: company.id, name: "Debit Note", abbreviation: "DN" },
     ],
   });
 
