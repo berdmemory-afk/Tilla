@@ -1,0 +1,54 @@
+
+Running 24 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/specs/e3-keyboard.spec.ts:8:7 › E3 sales keyboard UX › E3 Enter Alt+I Esc dirty-guard and Ctrl+S / F2 save hooks (4.2s)
+  ✓   2 [chromium] › e2e/specs/e5-gst-strip.spec.ts:8:7 › E5 GST strip non-blocking › E5 gst-strip present and does not disable save (2.9s)
+  ✓   3 [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers (6.8s)
+  ✓   4 [chromium] › e2e/specs/e7-ca-view.spec.ts:8:7 › E7 CA view read-only no referral › E7 ca_viewer has no affiliate/referral nav and cannot write (7.6s)
+  ✓   5 [chromium] › e2e/specs/e8-affiliate.spec.ts:9:7 › E8 affiliate pending no payout CTAs › E8 shows accrued earnings without Pay/Checkout CTAs (2.5s)
+  ✓   6 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (45ms)
+  ✓   7 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (400ms)
+  ✓   8 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (1.3s)
+  ✓   9 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (2.8s)
+  ✓  10 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (800ms)
+  ✓  11 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (466ms)
+  ✓  12 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (3.3s)
+  ✓  13 [chromium] › e2e/specs/j03-inter-sales.spec.ts:9:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (3.4s)
+  ✓  14 [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances (11.9s)
+  ✓  15 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:13:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash (3.4s)
+  ✓  16 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:56:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party (6.3s)
+  ✓  17 [chromium] › e2e/specs/j06-journal-contra.spec.ts:9:7 › J6 journal + contra › J6 journal posts balanced two-line entry (8.3s)
+  ✓  18 [chromium] › e2e/specs/j06-journal-contra.spec.ts:48:7 › J6 journal + contra › J6 contra posts balanced Cash↔Bank transfer (6.3s)
+  ✓  19 [chromium] › e2e/specs/j07-trial-balance.spec.ts:14:7 › J7 trial balance › J7 TB UI Balanced and DB totals match after journal (10.3s)
+  ✓  20 [chromium] › e2e/specs/j08-day-book.spec.ts:7:7 › J8 day book › J8 day book lists recently posted payment (3.7s)
+  ✓  21 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:13:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books (13.2s)
+  ✓  22 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:67:7 › J9 GSTR drafts vs books › J9 GSTR-3B draft outward matches sales books (17.6s)
+  ✓  23 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (11.7s)
+  ✘  24 [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores (15.0s)
+
+
+  1) [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m400[39m
+    Received: [31m201[39m
+
+      60 |
+      61 |     await apiSignIn(request, "demo@tilla.app");
+    > 62 |     const apiPay = await request.post("/api/vouchers/payment", {
+         |                             ^
+      63 |       data: {
+      64 |         partyId: supplier.id,
+      65 |         cashLedgerId: cash.id,
+        at /workspace/Tilla/e2e/specs/j12-fy-lock.spec.ts:62:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j12-fy-lock-J12-FY-lock-J1-e82ea-ayment-post-unlock-restores-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j12-fy-lock-J12-FY-lock-J1-e82ea-ayment-post-unlock-restores-chromium/error-context.md
+
+  1 failed
+    [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores 
+  23 passed (2.4m)

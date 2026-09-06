@@ -1,0 +1,111 @@
+
+Running 24 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/specs/e3-keyboard.spec.ts:8:7 › E3 sales keyboard UX › E3 Enter Alt+I Esc dirty-guard and Ctrl+S / F2 save hooks (5.5s)
+  ✓   2 [chromium] › e2e/specs/e5-gst-strip.spec.ts:8:7 › E5 GST strip non-blocking › E5 gst-strip present and does not disable save (3.5s)
+  ✓   3 [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers (4.2s)
+  ✓   4 [chromium] › e2e/specs/e7-ca-view.spec.ts:8:7 › E7 CA view read-only no referral › E7 ca_viewer has no affiliate/referral nav and cannot write (6.5s)
+  ✓   5 [chromium] › e2e/specs/e8-affiliate.spec.ts:9:7 › E8 affiliate pending no payout CTAs › E8 shows accrued earnings without Pay/Checkout CTAs (2.5s)
+  ✓   6 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (46ms)
+  ✓   7 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (484ms)
+  ✓   8 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (436ms)
+  ✓   9 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (1.8s)
+  ✓  10 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (3.6s)
+  ✓  11 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (487ms)
+  ✓  12 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (10.8s)
+  ✓  13 [chromium] › e2e/specs/j03-inter-sales.spec.ts:9:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (7.6s)
+  ✓  14 [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances (10.2s)
+  ✘  15 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:13:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash (2.7s)
+  ✘  16 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:56:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party (5.5s)
+  ✓  17 [chromium] › e2e/specs/j06-journal-contra.spec.ts:9:7 › J6 journal + contra › J6 journal posts balanced two-line entry (6.3s)
+  ✓  18 [chromium] › e2e/specs/j06-journal-contra.spec.ts:48:7 › J6 journal + contra › J6 contra posts balanced Cash↔Bank transfer (4.8s)
+  ✓  19 [chromium] › e2e/specs/j07-trial-balance.spec.ts:14:7 › J7 trial balance › J7 TB UI Balanced and DB totals match after journal (14.4s)
+  ✓  20 [chromium] › e2e/specs/j08-day-book.spec.ts:7:7 › J8 day book › J8 day book lists recently posted payment (3.5s)
+  ✘  21 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:13:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books (2.4s)
+  ✓  22 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:67:7 › J9 GSTR drafts vs books › J9 GSTR-3B draft outward matches sales books (3.1s)
+  ✓  23 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (2.2s)
+  ✘  24 [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores (3.6s)
+
+
+  1) [chromium] › e2e/specs/j05-payment-receipt.spec.ts:13:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      16 |     await page.goto("/vouchers/payment/new");
+      17 |     await expect(page.getByTestId("payment-form")).toBeVisible();
+    > 18 |     await page.getByTestId("payment-party").selectOption({ label: /Local Supplier/i });
+         |                                             ^
+      19 |     await page.getByTestId("payment-cash").selectOption({ label: "Cash" });
+      20 |     await page.getByTestId("payment-amount").fill("250");
+      21 |     await page.getByTestId("payment-narration").fill(narration);
+        at /workspace/Tilla/e2e/specs/j05-payment-receipt.spec.ts:18:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j05-payment-receipt-J5-pay-3cc8b-s-balanced-Dr-Party-Cr-Cash-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j05-payment-receipt-J5-pay-3cc8b-s-balanced-Dr-Party-Cr-Cash-chromium/error-context.md
+
+  2) [chromium] › e2e/specs/j05-payment-receipt.spec.ts:56:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      59 |     await page.goto("/vouchers/receipt/new");
+      60 |     await expect(page.getByTestId("receipt-form")).toBeVisible();
+    > 61 |     await page.getByTestId("receipt-party").selectOption({ label: /Retail Customer/i });
+         |                                             ^
+      62 |     await page.getByTestId("receipt-cash").selectOption({ label: "Bank" });
+      63 |     await page.getByTestId("receipt-amount").fill("400");
+      64 |     await page.getByTestId("receipt-narration").fill(narration);
+        at /workspace/Tilla/e2e/specs/j05-payment-receipt.spec.ts:61:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j05-payment-receipt-J5-pay-80ddd-s-balanced-Dr-Cash-Cr-Party-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j05-payment-receipt-J5-pay-80ddd-s-balanced-Dr-Cash-Cr-Party-chromium/error-context.md
+
+  3) [chromium] › e2e/specs/j09-gstr-reports.spec.ts:13:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      17 |     // Post an intra sale so books have known tax
+      18 |     await page.goto("/vouchers/sales/new");
+    > 19 |     await page.getByTestId("sales-party").selectOption({ label: /Retail Customer/i });
+         |                                           ^
+      20 |     await page.getByTestId("sales-intra").check();
+      21 |     await page.getByTestId("sales-qty").fill("2");
+      22 |     await page.getByTestId("sales-narration").fill(narration);
+        at /workspace/Tilla/e2e/specs/j09-gstr-reports.spec.ts:19:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j09-gstr-reports-J9-GSTR-d-d158c-summary-matches-sales-books-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j09-gstr-reports-J9-GSTR-d-d158c-summary-matches-sales-books-chromium/error-context.md
+
+  4) [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores 
+
+    Error: locator.selectOption: options[0].label: expected string, got object
+
+      50 |     // Attempt payment while locked
+      51 |     await page.goto("/vouchers/payment/new");
+    > 52 |     await page.getByTestId("payment-party").selectOption({ label: /Local Supplier/i });
+         |                                             ^
+      53 |     await page.getByTestId("payment-amount").fill("10");
+      54 |     await page.getByTestId("payment-narration").fill("E2E-J12-BLOCK-" + Date.now());
+      55 |     const payPromise = page.waitForResponse(
+        at /workspace/Tilla/e2e/specs/j12-fy-lock.spec.ts:52:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j12-fy-lock-J12-FY-lock-J1-e82ea-ayment-post-unlock-restores-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j12-fy-lock-J12-FY-lock-J1-e82ea-ayment-post-unlock-restores-chromium/error-context.md
+
+  4 failed
+    [chromium] › e2e/specs/j05-payment-receipt.spec.ts:13:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash 
+    [chromium] › e2e/specs/j05-payment-receipt.spec.ts:56:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party 
+    [chromium] › e2e/specs/j09-gstr-reports.spec.ts:13:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books 
+    [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores 
+  20 passed (1.8m)

@@ -1,0 +1,82 @@
+
+Running 24 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/specs/e3-keyboard.spec.ts:8:7 › E3 sales keyboard UX › E3 Enter Alt+I Esc dirty-guard and Ctrl+S / F2 save hooks (11.5s)
+  ✓   2 [chromium] › e2e/specs/e5-gst-strip.spec.ts:8:7 › E5 GST strip non-blocking › E5 gst-strip present and does not disable save (8.1s)
+  ✘   3 [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers (16.0s)
+  ✓   4 [chromium] › e2e/specs/e7-ca-view.spec.ts:8:7 › E7 CA view read-only no referral › E7 ca_viewer has no affiliate/referral nav and cannot write (13.3s)
+  ✓   5 [chromium] › e2e/specs/e8-affiliate.spec.ts:9:7 › E8 affiliate pending no payout CTAs › E8 shows accrued earnings without Pay/Checkout CTAs (8.5s)
+  ✓   6 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (3.0s)
+  ✓   7 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (994ms)
+  ✓   8 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (5.5s)
+  ✓   9 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (8.1s)
+  ✓  10 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (1.4s)
+  ✓  11 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (589ms)
+  ✓  12 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (3.4s)
+  ✓  13 [chromium] › e2e/specs/j03-inter-sales.spec.ts:9:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (3.4s)
+  ✘  14 [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances (18.6s)
+  ✓  15 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:6:7 › J5 payment + receipt › J5 payment posts balanced Dr Party Cr Cash (3.7s)
+  ✓  16 [chromium] › e2e/specs/j05-payment-receipt.spec.ts:48:7 › J5 payment + receipt › J5 receipt posts balanced Dr Cash Cr Party (16.9s)
+  ✓  17 [chromium] › e2e/specs/j06-journal-contra.spec.ts:9:7 › J6 journal + contra › J6 journal posts balanced two-line entry (18.5s)
+  ✓  18 [chromium] › e2e/specs/j06-journal-contra.spec.ts:48:7 › J6 journal + contra › J6 contra posts balanced Cash↔Bank transfer (28.7s)
+  ✓  19 [chromium] › e2e/specs/j07-trial-balance.spec.ts:14:7 › J7 trial balance › J7 TB UI Balanced and DB totals match after journal (15.6s)
+  ✓  20 [chromium] › e2e/specs/j08-day-book.spec.ts:7:7 › J8 day book › J8 day book lists recently posted payment (4.5s)
+  ✓  21 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:13:7 › J9 GSTR drafts vs books › J9 GSTR-1 API summary matches sales books (16.1s)
+  ✓  22 [chromium] › e2e/specs/j09-gstr-reports.spec.ts:67:7 › J9 GSTR drafts vs books › J9 GSTR-3B draft outward matches sales books (24.2s)
+  ✓  23 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (6.0s)
+  ✓  24 [chromium] › e2e/specs/j12-fy-lock.spec.ts:23:7 › J12 FY lock › J12 lock blocks payment post; unlock restores (34.5s)
+
+
+  1) [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m11[39m
+    Received: [31m12[39m
+
+      50 |         where: { companyId },
+      51 |       });
+    > 52 |       expect(voucherCountAfter).toBe(voucherCountBefore);
+         |                                 ^
+      53 |       const audit = await prisma2.auditLog.findFirst({
+      54 |         where: { companyId, action: "import.tally_stub" },
+      55 |         orderBy: { createdAt: "desc" },
+        at /workspace/Tilla/e2e/specs/e6-tally-import.spec.ts:52:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e6-tally-import-E6-Tally-i-c805e-it-does-not-mutate-vouchers-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e6-tally-import-E6-Tally-i-c805e-it-does-not-mutate-vouchers-chromium/error-context.md
+
+  2) [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m5[39m
+    Received: [31m3[39m
+
+      78 |       const after = await itemStockQty(prisma2, companyId, "Widget A");
+      79 |       // Delta assertion (suite may interleave other posts only if parallel — we use workers=1)
+    > 80 |       expect(after.balance - before.balance).toBe(5);
+         |                                              ^
+      81 |       expect(after.qtyIn - before.qtyIn).toBe(5);
+      82 |     } finally {
+      83 |       await prisma2.$disconnect();
+        at /workspace/Tilla/e2e/specs/j04-purchase-stock.spec.ts:80:46
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/j04-purchase-stock-J4-purc-62bb3-s-godown-stock-and-balances-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/j04-purchase-stock-J4-purc-62bb3-s-godown-stock-and-balances-chromium/error-context.md
+
+  2 failed
+    [chromium] › e2e/specs/e6-tally-import.spec.ts:10:7 › E6 Tally import smoke › E6 preview + confirm stub records audit; does not mutate vouchers 
+    [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances 
+  22 passed (4.6m)
+
+To open last HTML report run:
+
+  npx playwright show-report
+

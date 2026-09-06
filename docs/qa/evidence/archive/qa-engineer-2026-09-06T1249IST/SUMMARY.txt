@@ -1,0 +1,11 @@
+QA Engineer independent E2E re-run
+SHA: ba0e445374ebe435f7c0459eaaa8903549b66213 (docs pin to 9cff90e product+docs)
+Time: 2026-09-06 12:49 IST
+Env: SQLite prisma/dev.db; demo seed; Chromium; next dev on :3000 (reuseExistingServer)
+Result: 14 passed / 0 failed / 0 skipped (30.4s)
+Specs (10 files / 14 tests): j01-login, j02-intra-sales, j03-inter-sales, j04-purchase-stock, j11-tenancy, j-security-smoke, e3-keyboard, e5-gst-strip, e7-ca-view, e8-affiliate
+Failures: none
+Match vs QA Lead claimed 14/14 (gap slice / 9cff90e pack): YES (same pack counts on ba0e445)
+Coverage still open: J5-J9, J12, E6
+Contabo: not used
+SHIP_GATE / PASS: NOT declared by QA Engineer

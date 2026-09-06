@@ -1,0 +1,24 @@
+
+Running 14 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/specs/e3-keyboard.spec.ts:8:7 › E3 sales keyboard UX › E3 Enter Alt+I Esc dirty-guard and Ctrl+S / F2 save hooks (4.2s)
+  ✓   2 [chromium] › e2e/specs/e5-gst-strip.spec.ts:8:7 › E5 GST strip non-blocking › E5 gst-strip present and does not disable save (2.8s)
+  ✓   3 [chromium] › e2e/specs/e7-ca-view.spec.ts:8:7 › E7 CA view read-only no referral › E7 ca_viewer has no affiliate/referral nav and cannot write (2.9s)
+  ✓   4 [chromium] › e2e/specs/e8-affiliate.spec.ts:9:7 › E8 affiliate pending no payout CTAs › E8 shows accrued earnings without Pay/Checkout CTAs (2.4s)
+  ✓   5 [chromium] › e2e/specs/j-security-smoke.spec.ts:6:7 › security smoke › unauthenticated API 401 (24ms)
+  ✓   6 [chromium] › e2e/specs/j-security-smoke.spec.ts:10:7 › security smoke › ca_viewer cannot post sales (443ms)
+  ✓   7 [chromium] › e2e/specs/j-security-smoke.spec.ts:23:7 › security smoke › checkout remains stub (no live PG) (387ms)
+  ✓   8 [chromium] › e2e/specs/j01-login.spec.ts:13:7 › J1 login + session › J1 demo login reaches dashboard with Acme session (1.6s)
+  ✓   9 [chromium] › e2e/specs/j01-login.spec.ts:21:7 › J1 login + session › J1 unauthenticated /dashboard redirects to login (698ms)
+  ✓  10 [chromium] › e2e/specs/j01-login.spec.ts:27:7 › J1 login + session › J1 session cookie enables authenticated API (416ms)
+  ✓  11 [chromium] › e2e/specs/j02-intra-sales.spec.ts:22:7 › J2 intra sales CGST+SGST › J2 create intra sales and assert UI API DB (3.3s)
+  ✓  12 [chromium] › e2e/specs/j03-inter-sales.spec.ts:9:7 › J3 inter sales IGST › J3 create inter-state sale with IGST only (3.5s)
+  ✓  13 [chromium] › e2e/specs/j04-purchase-stock.spec.ts:14:7 › J4 purchase + stock › J4 purchase increases godown stock and balances (4.0s)
+  ✓  14 [chromium] › e2e/specs/j11-tenancy.spec.ts:15:7 › J11 tenancy isolation › J11 cannot read other company vouchers (2.2s)
+
+  14 passed (30.4s)
+
+To open last HTML report run:
+
+  npx playwright show-report
+

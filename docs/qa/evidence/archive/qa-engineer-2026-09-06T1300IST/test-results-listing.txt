@@ -1,0 +1,6 @@
+total 20
+drwxr-xr-x  4 box box 4096 Sep  6 07:30 .
+drwxr-xr-x 12 box box 4096 Sep  6 07:30 ..
+-rw-r--r--  1 box box  145 Sep  6 07:30 .last-run.json
+drwxr-xr-x  2 box box 4096 Sep  6 07:31 .playwright-artifacts-0
+drwxr-xr-x  3 box box 4096 Sep  6 07:31 .playwright-artifacts-1

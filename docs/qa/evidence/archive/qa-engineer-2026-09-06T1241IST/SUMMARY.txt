@@ -1,0 +1,8 @@
+QA Engineer independent E2E
+SHA: 3253aaf59b3160e596dbaec1ef00e476fc6926a8
+Time: 2026-09-06 12:41:27 IST
+Result: 9 passed / 0 failed / 0 skipped
+Specs: j01-login, j02-intra-sales, j03-inter-sales, j11-tenancy, j-security-smoke
+SHIP_GATE: NOT declared by QA Engineer
+Match QA Lead partial green on 3253aaf: YES
+Coverage gaps vs J1-J12/E1-E9: missing J4-J10,J12; E3 keyboard; E6 import; E7 CA UI; E8 affiliate CTAs; E9 TB/daybook/FY
