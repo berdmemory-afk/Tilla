@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { PRICING_PLANS } from "../src/lib/pricing/plans";
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,13 @@ async function main() {
   console.log("Seeding Tilla demo data...");
 
   // Clean slate for idempotent local demo
+  await prisma.affiliateEarning.deleteMany();
+  await prisma.affiliateReferral.deleteMany();
+  await prisma.companySubscription.deleteMany();
+  await prisma.pricingPlan.deleteMany();
+  await prisma.companyInvite.deleteMany();
+  await prisma.eInvoiceRecord.deleteMany();
+  await prisma.eWayBillRecord.deleteMany();
   await prisma.voucherItem.deleteMany();
   await prisma.voucherLine.deleteMany();
   await prisma.stockEntry.deleteMany();
@@ -34,6 +42,7 @@ async function main() {
       name: "Demo Owner",
       email: "demo@tilla.app",
       passwordHash,
+      referralCode: "TILLA-DEMO",
     },
   });
 
@@ -63,6 +72,7 @@ async function main() {
     { name: "Capital Account", nature: "equity" },
     { name: "Current Assets", nature: "asset" },
     { name: "Sundry Debtors", nature: "asset" },
+    { name: "Sundry Creditors", nature: "liability" },
     { name: "Current Liabilities", nature: "liability" },
     { name: "Duties & Taxes", nature: "liability" },
     { name: "Sales Accounts", nature: "income" },
@@ -96,8 +106,9 @@ async function main() {
     });
   }
 
-  await ledger("Capital", "Capital Account", { openingCr: 50000 });
-  const cash = await ledger("Cash", "Current Assets", { openingDr: 50000 });
+  await ledger("Capital", "Capital Account", { openingCr: 100000 });
+  const cash = await ledger("Cash", "Current Assets", { openingDr: 70000 });
+  const bank = await ledger("Bank", "Current Assets", { openingDr: 30000 });
   await ledger("Sales", "Sales Accounts", { gstRole: "sales" });
   await ledger("Output CGST", "Duties & Taxes", { gstRole: "output_cgst" });
   await ledger("Output SGST", "Duties & Taxes", { gstRole: "output_sgst" });
@@ -105,9 +116,10 @@ async function main() {
   await ledger("Input CGST", "Duties & Taxes", { gstRole: "input_cgst" });
   await ledger("Input SGST", "Duties & Taxes", { gstRole: "input_sgst" });
   await ledger("Input IGST", "Duties & Taxes", { gstRole: "input_igst" });
-  await ledger("Purchase", "Purchase Accounts");
+  await ledger("Purchase", "Purchase Accounts", { gstRole: "purchase" });
 
   const debtorLedger = await ledger("Retail Customer", "Sundry Debtors");
+  const creditorLedger = await ledger("Local Supplier", "Sundry Creditors");
 
   const party = await prisma.party.create({
     data: {
@@ -121,6 +133,32 @@ async function main() {
     },
   });
 
+  const supplier = await prisma.party.create({
+    data: {
+      companyId: company.id,
+      name: "Local Supplier",
+      gstin: "27AADCS5678B1Z9",
+      stateCode: "27",
+      stateName: "Maharashtra",
+      partyType: "supplier",
+      ledgerId: creditorLedger.id,
+    },
+  });
+
+  // Inter-state customer for IGST demos
+  const igstDebtor = await ledger("Delhi Buyer", "Sundry Debtors");
+  await prisma.party.create({
+    data: {
+      companyId: company.id,
+      name: "Delhi Buyer",
+      gstin: "07AABCD9999C1Z0",
+      stateCode: "07",
+      stateName: "Delhi",
+      partyType: "customer",
+      ledgerId: igstDebtor.id,
+    },
+  });
+
   await prisma.voucherType.createMany({
     data: [
       { companyId: company.id, name: "Sales", abbreviation: "Sls" },
@@ -131,7 +169,7 @@ async function main() {
     ],
   });
 
-  await prisma.godown.create({
+  const godown = await prisma.godown.create({
     data: { companyId: company.id, name: "Main Godown", isPrimary: true },
   });
 
@@ -144,10 +182,11 @@ async function main() {
       unit: "NOS",
       gstRatePct: d(18),
       salesPrice: d(1000),
+      purchasePrice: d(700),
     },
   });
 
-  await prisma.item.create({
+  const itemB = await prisma.item.create({
     data: {
       companyId: company.id,
       name: "Widget B",
@@ -156,15 +195,64 @@ async function main() {
       unit: "NOS",
       gstRatePct: d(18),
       salesPrice: d(500),
+      purchasePrice: d(350),
+    },
+  });
+
+  // Opening stock
+  await prisma.stockEntry.createMany({
+    data: [
+      {
+        companyId: company.id,
+        itemId: item.id,
+        godownId: godown.id,
+        qtyIn: d(100),
+        qtyOut: d(0),
+        note: "Opening stock",
+      },
+      {
+        companyId: company.id,
+        itemId: itemB.id,
+        godownId: godown.id,
+        qtyIn: d(50),
+        qtyOut: d(0),
+        note: "Opening stock",
+      },
+    ],
+  });
+
+  // Pricing plans
+  for (const p of PRICING_PLANS) {
+    await prisma.pricingPlan.create({
+      data: {
+        code: p.code,
+        name: p.name,
+        priceInrMonthly: p.priceInrMonthly,
+        description: p.description,
+        featuresJson: JSON.stringify(p.features),
+        sortOrder: p.sortOrder,
+      },
+    });
+  }
+
+  const growth = await prisma.pricingPlan.findUniqueOrThrow({
+    where: { code: "growth" },
+  });
+  await prisma.companySubscription.create({
+    data: {
+      companyId: company.id,
+      planId: growth.id,
+      status: "trial",
+      currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     },
   });
 
   console.log("Seed complete.");
   console.log("  Login: demo@tilla.app / demo1234");
   console.log(`  Company: ${company.name} (${company.id})`);
-  console.log(`  Party: ${party.name} (${party.id})`);
-  console.log(`  Item: ${item.name} (${item.id})`);
-  console.log(`  Cash ledger: ${cash.name}`);
+  console.log(`  Customer: ${party.name} · Supplier: ${supplier.name}`);
+  console.log(`  Item: ${item.name} · Cash: ${cash.name} · Bank: ${bank.name}`);
+  console.log(`  Referral code: TILLA-DEMO`);
 }
 
 main()

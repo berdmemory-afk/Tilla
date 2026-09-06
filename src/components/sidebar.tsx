@@ -7,10 +7,23 @@ import { SignOutButton } from "./sign-out-button";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/vouchers/sales", label: "Sales Vouchers" },
-  { href: "/vouchers/sales/new", label: "New Sales (GST)" },
+  { href: "/vouchers/sales", label: "Sales" },
+  { href: "/vouchers/sales/new", label: "New Sales" },
+  { href: "/vouchers/purchase", label: "Purchase" },
+  { href: "/vouchers/purchase/new", label: "New Purchase" },
+  { href: "/vouchers/payment/new", label: "Payment" },
+  { href: "/vouchers/receipt/new", label: "Receipt" },
+  { href: "/vouchers/journal/new", label: "Journal" },
+  { href: "/inventory", label: "Inventory" },
   { href: "/reports/day-book", label: "Day Book" },
   { href: "/reports/trial-balance", label: "Trial Balance" },
+  { href: "/reports/gstr-1", label: "GSTR-1" },
+  { href: "/reports/gstr-3b", label: "GSTR-3B" },
+  { href: "/compliance/e-invoice", label: "E-invoice" },
+  { href: "/compliance/e-way", label: "E-way" },
+  { href: "/settings/ca-invite", label: "CA Invite" },
+  { href: "/settings/pricing", label: "Pricing" },
+  { href: "/settings/affiliate", label: "Affiliate" },
 ];
 
 export function Sidebar({
@@ -36,18 +49,20 @@ export function Sidebar({
           </div>
         ) : null}
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {nav.map((item) => {
           const active =
             item.href === "/vouchers/sales"
               ? pathname === "/vouchers/sales"
-              : pathname === item.href;
+              : item.href === "/vouchers/purchase"
+                ? pathname === "/vouchers/purchase"
+                : pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={clsx(
-                "block rounded-md px-3 py-2 text-sm transition",
+                "block rounded-md px-3 py-1.5 text-sm transition",
                 active
                   ? "bg-tilla-600 text-white"
                   : "text-tilla-100 hover:bg-white/10"

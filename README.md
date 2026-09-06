@@ -84,12 +84,25 @@ See .env.example.
 Sales voucher (intra-state): Dr Party, Cr Sales, Cr Output CGST/SGST.
 Inter-state: Cr Output IGST instead.
 
-## MVP roadmap (stub)
+## MVP roadmap
 
 - [x] Foundation schema + auth + sales vertical slice
-- [ ] Purchase voucher + input tax credit
-- [ ] GSTR-1 / GSTR-3B export
-- [ ] Inventory movements + godown transfers
-- [ ] CA viewer read-only reports
+- [x] Purchase voucher + input tax credit
+- [x] Payment / receipt / journal basics
+- [x] Inventory movements + godown balances
+- [x] GSTR-1 / GSTR-3B stub exports
+- [x] E-invoice / e-way UI + status store
+- [x] CA invite + affiliate models + pricing config
+- [ ] Live payment gateway - stubs only today
 - [ ] Live GSTN adapters (feature-flagged)
 - [ ] Postgres + multi-company switcher
+- [ ] Contabo production deploy (POST live PG only)
+
+## Contabo prep notes (POST live PG go-live only)
+Do not provision Contabo/public production until a live PG is wired and verified.
+Suggested: Ubuntu LTS VPS, Docker Compose for Postgres + app, Nginx/Caddy TLS.
+Set DATABASE_URL, AUTH_SECRET, NEXTAUTH_URL, and PG keys when ready.
+Never ship demo password to prod. Daily Postgres backups; test restore once.
+Non-goals until PG: Contabo billing, card capture, GSTN prod credentials.
+
+See MARKET_READY_STATUS.md for market-ready progress (~85%).
