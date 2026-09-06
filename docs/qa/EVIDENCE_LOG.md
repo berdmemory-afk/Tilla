@@ -7,7 +7,7 @@ Append-only. Newest first.
 - SHIP_GATE: **PASS-ready** (J1–J12 critical + UX SoT green with archive)
 - Unit: 18/18 PASS (vitest)
 - E2E: 24/24 PASS (prior 14 + j05×2 j06×2 j07 j08 j09×2 j12 e6)
-- SHA: 52b9ed5
+- SHA: 88a245d
 - Archive: docs/qa/evidence/archive/run-20260906T072800Z.txt
 - Log: docs/qa/evidence/e2e-run-20260906T072800Z.log
 - Specs added: j05-payment-receipt, j06-journal-contra, j07-trial-balance, j08-day-book, j09-gstr-reports, j12-fy-lock, e6-tally-import

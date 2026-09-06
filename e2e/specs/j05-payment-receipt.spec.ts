@@ -2,13 +2,35 @@ import { test, expect } from "@playwright/test";
 import { loginAs } from "../helpers/auth";
 import { getPrisma, getAcmeCompanyId, assertVoucherBalanced } from "../helpers/db";
 
+async function ensureAcmeUnlocked() {
+  const prisma = getPrisma();
+  try {
+    const companyId = await getAcmeCompanyId(prisma);
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { booksLocked: false, booksLockedAt: null },
+    });
+    return companyId;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 test.describe("J5 payment + receipt", () => {
+  test.beforeEach(async () => {
+    await ensureAcmeUnlocked();
+  });
+
   test("J5 payment posts balanced Dr Party Cr Cash", async ({ page }) => {
     const narration = "E2E-J5-PMT-" + Date.now();
     const prisma = getPrisma();
     const companyId = await getAcmeCompanyId(prisma);
-    const supplier = await prisma.party.findFirstOrThrow({ where: { companyId, name: "Local Supplier" } });
-    const cash = await prisma.ledger.findFirstOrThrow({ where: { companyId, name: "Cash" } });
+    const supplier = await prisma.party.findFirstOrThrow({
+      where: { companyId, name: "Local Supplier" },
+    });
+    const cash = await prisma.ledger.findFirstOrThrow({
+      where: { companyId, name: "Cash" },
+    });
     await prisma.$disconnect();
 
     await loginAs(page, "demo@tilla.app");
@@ -23,6 +45,9 @@ test.describe("J5 payment + receipt", () => {
     );
     await page.getByTestId("payment-submit").click();
     const apiRes = await apiPromise;
+    if (apiRes.status() !== 201) {
+      console.log("payment fail", await apiRes.json());
+    }
     expect(apiRes.status()).toBe(201);
     const body = await apiRes.json();
     const voucherId = body.voucher?.id as string;
@@ -49,8 +74,12 @@ test.describe("J5 payment + receipt", () => {
     const narration = "E2E-J5-RCP-" + Date.now();
     const prisma = getPrisma();
     const companyId = await getAcmeCompanyId(prisma);
-    const customer = await prisma.party.findFirstOrThrow({ where: { companyId, name: "Retail Customer" } });
-    const bank = await prisma.ledger.findFirstOrThrow({ where: { companyId, name: "Bank" } });
+    const customer = await prisma.party.findFirstOrThrow({
+      where: { companyId, name: "Retail Customer" },
+    });
+    const bank = await prisma.ledger.findFirstOrThrow({
+      where: { companyId, name: "Bank" },
+    });
     await prisma.$disconnect();
 
     await loginAs(page, "demo@tilla.app");
@@ -65,6 +94,9 @@ test.describe("J5 payment + receipt", () => {
     );
     await page.getByTestId("receipt-submit").click();
     const apiRes = await apiPromise;
+    if (apiRes.status() !== 201) {
+      console.log("receipt fail", await apiRes.json());
+    }
     expect(apiRes.status()).toBe(201);
     const body = await apiRes.json();
     const voucherId = body.voucher?.id as string;

@@ -1,5 +1,5 @@
 Tilla E2E Ship Gate evidence
-SHA: 52b9ed53fdbb09f56243346dff1d034aa129e257
+SHA: 88a245df62ad2cca810bf985fc2e0ad557a3a8fb
 Time: 2026-09-06 ~13:00 IST (log UTC stamp 072800Z)
 Env: SQLite prisma/dev.db; next dev :3000 reuseExistingServer; Chromium; workers=1
 Unit: vitest 18/18 PASS
